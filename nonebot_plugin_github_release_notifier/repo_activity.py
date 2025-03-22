@@ -1,13 +1,10 @@
 import httpx
-import json
 from nonebot import get_bot
 from nonebot.log import logger
 from nonebot import get_plugin_config
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot
 from datetime import datetime
-import os
 import requests
-import sqlite3
 import time
 import ssl
 from .config import Config
@@ -19,6 +16,14 @@ config = get_plugin_config(Config)
 GITHUB_TOKEN: str | None = config.github_token
 max_retries: int = config.github_validate_retries
 delay: int = config.github_validate_delay
+
+default_sending_templates = {
+    "commit": "📜 New Commit in {repo}\n\nMessage: {message}\nAuthor: {author}\nURL: {url}",
+    "issue": "🐛 **New Issue in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nURL: {url}",
+    "pull_req": "🔀 **New Pull Request in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nURL: {url}",
+    "release": "🚀 **New Release for {repo}!**\n\n**Name:** {name}\nVersion: {version}\nDetails:\n {details}\nURL: {url}",
+}
+config_template = config.github_sending_templates
 
 
 def validate_github_token(retries=3, delay=5) -> bool:
@@ -107,34 +112,47 @@ async def notify(bot: Bot, group_id: int, repo: str, data: list, data_type: str,
 def format_message(repo: str, item: dict, data_type: str) -> str:
     """Format the notification message based on the data type."""
     if data_type == "commit":
-        return (
-            f"📜 New Commit in {repo}\n\n"
-            f"Message: {item['commit']['message']}\n"
-            f"Author: {item['commit']['committer']['name']}\n"
-            f"URL: {item['html_url']}"
-        )
+        datas = {
+            "repo": repo,
+            "message": item['commit']['message'],
+            "author": item['commit']['committer']['name'],
+            "url": item['html_url']
+        }
+        return config_template.get(data_type, 
+                                       default_sending_templates
+                                       .get(data_type, '')).format(**datas)
+        
     elif data_type == "issue":
-        return (
-            f"🐛 **New Issue in {repo}!**\n\n"
-            f"Title: {item['title']}\n"
-            f"Author: {item['user']['login']}\n"
-            f"URL: {item['html_url']}"
-        )
+        datas = {
+            "repo": repo,
+            "title": item['title'],
+            "author": item['user']['login'],
+            "url": item['html_url']
+        }
+        return config_template.get(data_type, 
+                                       default_sending_templates
+                                       .get(data_type, '')).format(**datas)
     elif data_type == "pull_req":
-        return (
-            f"🔀 **New Pull Request in {repo}!**\n\n"
-            f"Title: {item['title']}\n"
-            f"Author: {item['user']['login']}\n"
-            f"URL: {item['html_url']}"
-        )
+        datas = {
+            "repo": repo,
+            "title": item['title'],
+            "author": item['user']['login'],
+            "url": item['html_url']
+        }
+        return config_template.get(data_type, 
+                                       default_sending_templates
+                                       .get(data_type, '')).format(**datas)
     elif data_type == "release":
-        return (
-            f"🚀 **New Release for {repo}!**\n\n"
-            f"**Name:** {item.get('name', 'New Release')}\n"
-            f"Version: {item.get('tag_name', 'Unknown Version')}\n"
-            f"Details:\n {item.get('body', 'No description provided.')}\n"
-            f"URL: {item.get('html_url', 'No URL')}"
-        )
+        datas = {
+            "repo": repo,
+            "name": item.get('name', 'New Release'),
+            "version": item.get('tag_name', 'Unknown Version'),
+            "details": item.get('body', 'No description provided.'),
+            "url": item.get('html_url', 'No URL')
+        }
+        return config_template.get(data_type, 
+                                       default_sending_templates
+                                       .get(data_type, '')).format(**datas)
     return "Unknown data type."
 
 

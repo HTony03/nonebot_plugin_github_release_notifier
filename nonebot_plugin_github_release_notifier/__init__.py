@@ -1,11 +1,7 @@
-import httpx
-import json
-from nonebot import require, get_bot
+from nonebot import require
 from nonebot.log import logger
-import time
 from .repo_activity import *
 from nonebot import get_plugin_config
-from nonebot.adapters.onebot.v11 import Bot
 from .config import Config
 from .group_commands import *
 from .db_action import init_database, load_groups

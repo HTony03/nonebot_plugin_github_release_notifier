@@ -32,4 +32,8 @@ class Config(BaseModel):
     '''
     disable the config when fail to get repo data
     '''
-   
+    github_sending_templates : dict = {}
+    '''
+    sending templates for different events
+    format: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
+    '''

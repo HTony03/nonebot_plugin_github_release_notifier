@@ -14,6 +14,14 @@ from .permission import permission_check
 config = Config()
 GITHUB_TOKEN = config.github_token
 
+
+
+def link_to_repo_name(link:str):
+    lin = link.replace('https://','').replace('http://','')
+    if len(lin.split('/')) == 2:
+        return lin
+    return '/'.join(lin.split('/')[1:3])
+    
 # Command to check remaining GitHub API usage
 check_api_usage = on_command("check_api_usage", aliases={"api_usage", "github_usage"}, priority=5)
 
@@ -74,7 +82,7 @@ async def handle_add_group_repo(bot: Bot,event:GroupMessageEvent, args:Message =
     if not (repo := args.extract_plain_text()):
         await bot.send(event,'no repo given')
         return
-    repo_f = repo.split(' ')[0]
+    repo_f = link_to_repo_name(repo.split(' ')[0])
     
     add_group_repo_data(group_id, repo_f)
     from . import refresh_data_from_db
@@ -117,7 +125,7 @@ async def handle_del_group_repo(bot: Bot,event:GroupMessageEvent, args:Message =
     if not (repo := args.extract_plain_text()):
         await bot.send(event,'no repo given')
         return
-    repo_f = repo.split(' ')[0]
+    repo_f = link_to_repo_name(repo.split(' ')[0])
     
     groups_repo = load_groups()
     for group_id, repo in {group_id:repo}.items():
@@ -154,6 +162,7 @@ async def handle_del_group_repo(bot: Bot,event:PrivateMessageEvent, args:Message
     group_id = repo.split(' ')[1]
     if repo_f.isdigit():
         repo_f,group_id = group_id,repo_f
+    repo_f = link_to_repo_name(repo_f)
     
     groups_repo = load_groups()
     for group_id, repo in {group_id:repo}.items():
@@ -191,7 +200,7 @@ async def handle_del_group_repo(bot: Bot,event:GroupMessageEvent, args:Message =
     if len(repo.split(' ')) < 3:
         await bot.send(event,'no enough param given')
         return
-    repo_f = repo.split(' ')[0]
+    repo_f = link_to_repo_name(repo.split(' ')[0])
     data = repo.split(' ')[1]
     if data not in ['commit','issue','pull_req','release',\
         'commits','issues','prs','releases']:
@@ -200,7 +209,7 @@ async def handle_del_group_repo(bot: Bot,event:GroupMessageEvent, args:Message =
     val = True if repo.split(' ')[2] in ('True','true','TRUE','T','t','1') else False
     
     groups_repo = load_groups()
-    for group_id, repo in {group_id:repo}.items():
+    for group_id, repo in {group_id:repo_f}.items():
         if group_id in groups_repo:
             if repo_f in map(lambda x:x['repo'], groups_repo[group_id]):
                 change_group_repo_cfg(group_id,repo_f,data,val)
@@ -228,6 +237,7 @@ async def handle_del_group_repo(bot: Bot,event:PrivateMessageEvent, args:Message
     group_id = repo.split(' ')[1]
     if repo_f.isdigit():
         repo_f,group_id = group_id,repo_f
+    repo_f = link_to_repo_name(repo_f)
     data = repo.split(' ')[2]
     if data not in ['commit','issue','pull_req','release',\
         'commits','issues','prs','releases']:

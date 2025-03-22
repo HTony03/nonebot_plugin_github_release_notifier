@@ -52,7 +52,6 @@ def load_last_processed() -> dict:
             "pull_req": prs,
             "release": releases
         }
-    logger.info(last_processed)
     return last_processed
 
 def save_last_processed(data: dict):
@@ -92,7 +91,6 @@ def load_groups() -> dict:
     group_data = {}
     for row in rows:
         groupid, repo, commits, prs, issues, releases = row
-        logger.info(f"Loaded from DB: groupid={groupid}, repo={repo}, commits={commits}, issues={issues}, prs={prs}, releases={releases}")
         if groupid not in group_data:
             data = []
         else:
