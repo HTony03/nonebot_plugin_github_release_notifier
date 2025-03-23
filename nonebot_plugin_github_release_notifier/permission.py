@@ -1,10 +1,7 @@
 from nonebot import logger
-from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent
+from nonebot.adapters.onebot.v11 import PrivateMessageEvent
 from nonebot.adapters.onebot.v11.bot import Bot
 from nonebot.adapters.onebot.v11.event import MessageEvent
-from nonebot.adapters.onebot.v11.message import MessageSegment
-from nonebot.permission import SUPERUSER
 
 # -----------------------------Permisssion&exclusive only commands---------------------------
 async def permission_check(event:MessageEvent, bot: Bot):
@@ -13,7 +10,8 @@ async def permission_check(event:MessageEvent, bot: Bot):
     group_id = event.group_id
     id = event.user_id
     member = await bot.get_group_member_info(group_id=group_id,
-                                             user_id=id)
+                                                             user_id=id)
+    '''
     temp_member = member
     temp_member.pop('sex')
     temp_member.pop('age')
@@ -26,7 +24,7 @@ async def permission_check(event:MessageEvent, bot: Bot):
     temp_member.pop('is_robot')
     temp_member.pop('card_changeable')
     temp_member.pop('shut_up_timestamp')
-    # logger.debug(temp_member)
+    logger.debug(temp_member)'''
     
     if member['role'] == 'admin' or \
         member['role'] == 'owner':

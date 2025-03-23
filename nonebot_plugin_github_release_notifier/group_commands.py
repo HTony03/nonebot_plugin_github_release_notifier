@@ -17,7 +17,7 @@ GITHUB_TOKEN = config.github_token
 
 
 def link_to_repo_name(link:str):
-    lin = link.replace('https://','').replace('http://','')
+    lin = link.replace('https://','').replace('http://','').replace(".git","")
     if len(lin.split('/')) == 2:
         return lin
     return '/'.join(lin.split('/')[1:3])
@@ -104,8 +104,11 @@ async def handle_add_group_repo(bot: Bot,event:PrivateMessageEvent, args:Message
     group_id = repo.split(' ')[1]
     if repo_f.isdigit():
         repo_f,group_id = group_id,repo_f
+    repo_f = link_to_repo_name(repo_f)
+    default_config = config.github_default_config_setting
     
-    add_group_repo_data(group_id, repo_f)
+    
+    add_group_repo_data(group_id, repo_f, default_config, default_config, default_config, default_config)
     from . import refresh_data_from_db
     refresh_data_from_db()
     await bot.send(event,f"Added group-repo mapping: {group_id} -> {repo_f}")

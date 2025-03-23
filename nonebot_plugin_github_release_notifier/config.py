@@ -28,7 +28,7 @@ class Config(BaseModel):
     delete group repo
     format: {group_id: ['repo']}
     """
-    github_disable_when_fail : bool = False
+    github_disable_when_fail : bool = True
     '''
     disable the config when fail to get repo data
     '''
@@ -36,4 +36,15 @@ class Config(BaseModel):
     '''
     sending templates for different events
     format: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
+    aval parameters:
+    commit: repo, message, author, url
+    issue: repo, title, author, url
+    pull_req: repo, title, author, url
+    release: repo, name, version, details, url
+    usage: '{<parameter>}' (using python format func)
+    use default template if not set 
+    '''
+    github_default_config_setting : bool = True
+    '''
+    default setting for all repos when adding repo in groups
     '''

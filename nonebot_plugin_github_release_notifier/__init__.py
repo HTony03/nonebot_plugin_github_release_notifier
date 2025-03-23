@@ -12,7 +12,7 @@ from nonebot.plugin import PluginMetadata
 
 __plugin_meta__ = PluginMetadata(
     name = "github_release_notifier",
-    description="Notify group members of new commits, issues, and PRs in GitHub repos.",
+    description="A plugin for nonebot & onebot to notify group members of new commits, issues, and PRs in GitHub repos.",
     usage="github repo events auto forward|自动转发github repo事件",
     config = Config,
     extra={},

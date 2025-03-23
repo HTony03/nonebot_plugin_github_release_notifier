@@ -88,7 +88,7 @@ async def notify(bot: Bot, group_id: int, repo: str, data: list, data_type: str,
         else:
             times = item['commit']['committer']['date'].replace("Z", "+00:00")
         item_time = datetime.fromisoformat(times)
-        last_time = last_processed.get(repo, {}).get(data_type)
+        last_time = load_last_processed().get(repo, {}).get(data_type)
         # logger.info(f'comparing {item_time}(current) and {last_time}')
         if not last_time or item_time > datetime.fromisoformat(last_time.replace("Z", "+00:00")):
             message = format_message(repo, item, data_type)
@@ -173,7 +173,7 @@ async def check_and_notify_updates():
                     elif "falt" in data:
                         logger.error(data["falt"])
                         await bot.send_group_msg(group_id=group_id, message=data["falt"])
-                        if config.github_disable_when_fail:
+                        if config.github_disable_when_fail and 'SSL' not in data["falt"]:
                             # TODO get fail times, >3 disable,or with 404 disable
                             repo_config[data_type] = False  # Disable further notifications for this type
                             change_group_repo_cfg(group_id, repo, data_type, False)
