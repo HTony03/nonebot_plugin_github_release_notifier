@@ -1,16 +1,16 @@
-# GitHub 发布通知器
+# Nonebot_plugin_github_release_notifier
 
 一个用于监控 GitHub 仓库发布并发送通知的插件。
 
 ## 功能
 - 监控多个 GitHub 仓库。
-- 通过指定渠道通知用户新发布。
+- 通过qq bot通知用户新动态。
 - 可自定义通知格式。
 
 ## 安装
 
 ### 通过nb-cli安装
-暂未实现
+```nb-cli install nonebot-plugin-github-release-notifier```
 ### 通过pip安装
 ```pip install nonebot-plugin-github-release-notifier```
 
@@ -26,6 +26,13 @@
 3. 将插件置于你的plugins文件夹
 
 ## 使用
+#### pyproject.toml使用
+在`pyproject.toml`文件中添加以下内容
+```toml
+[tool.nonebot]
+plugins = ["nonebot_plugin_github_release_notifier"]
+```
+#### bot.py使用
 ```python title="bot.py"
 import nonebot
 from nonebot.adapters.onebot.v11 import Adapter
@@ -39,13 +46,13 @@ nonebot.load_builtin_plugins()
 
 # load other plugins
 
-# bam need this to manage background tasks
 nonebot.load_plugin("nonebot_plugin_apscheduler")
 nonebot.load_plugin("nonebot_plugin_github_release_notifier")
 
 nonebot.run()
 
 ```
+## 配置
 相关`.env`配置项如下
 
 所有配置项均为可选参数 群组可通过command添加
@@ -205,8 +212,14 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ### TODOS
 
 - [x] 自定义发送信息格式
+- [ ] 添加help
 - [ ] 数据库结构重置
 
 
 ## LICENCE
 本插件按照MIT协议传播
+
+## Releases
+`V0.1.2` 修改发布信息
+
+`V0.1.0`-`V0.1.1` 主程序完成，功能适配， 准备发布

@@ -1,19 +1,19 @@
-# GitHub Release Notifier
+# Nonebot_plugin_github_release_notifier
 
 A plugin for monitoring GitHub repository releases and sending notifications.
 
 ## Features
 - Monitor multiple GitHub repositories.
-- Notify users of new releases through specified channels.
+- Notify users of new releases through qq bots.
 - Customizable notification formats.
 
 ## Installation
 
 ### Install via nb-cli
-Not yet implemented.
+```nb-cli install nonebot-plugin-github-release-notifier```
 
 ### Install via pip
-Not yet implemented.
+```pip install nonebot-plugin-github-release-notifier```
 
 ### Clone Repository Installation
 1. Clone the repository:
@@ -27,6 +27,13 @@ Not yet implemented.
 3. Place the plugin in your `plugins` folder.
 
 ## Usage
+#### using by `pyproject.toml`
+add thr following contents to your `pyproject.toml` file
+```toml
+[tool.nonebot]
+plugins = ["nonebot_plugin_github_release_notifier"]
+```
+#### using by editing `bot.py`
 ```python title="bot.py"
 import nonebot
 from nonebot.adapters.onebot.v11 import Adapter
@@ -40,7 +47,7 @@ nonebot.load_builtin_plugins()
 
 # load other plugins
 
-# bam need this to manage background tasks
+
 nonebot.load_plugin("nonebot_plugin_apscheduler")
 nonebot.load_plugin("nonebot_plugin_github_release_notifier")
 
@@ -207,7 +214,13 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ### TODOS
 
 - [x] Customizable message formats
+- [ ] add help
 - [ ] Reset database structure
 
 ## LICENSE
 This plugin is distributed under the MIT License.
+
+## Release
+`V0.1.2` prepare for upload and release
+
+`V0.1.0` finish main program and funca
