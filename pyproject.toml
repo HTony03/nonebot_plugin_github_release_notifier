@@ -2,7 +2,9 @@
 name = "nonebot_plugin_github_release_notifier"
 version = "0.1.0"
 description = "A plugin for nonebot & onebot to notify group members of new commits, issues, and PRs in GitHub repos."
-authors = ["HTony03 <HTony03@foxmail.com>"]
+authors =  [
+  { name="HTony03", email="HTony03@foxmail.com" },
+]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
