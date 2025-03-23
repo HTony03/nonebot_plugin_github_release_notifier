@@ -6,7 +6,7 @@ from .config import Config
 from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import init_database, load_groups
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",
@@ -15,6 +15,7 @@ __plugin_meta__ = PluginMetadata(
         "group members of new commits, "
         "issues, and PRs in GitHub repos."
     ),
+    type='application',
     usage="github repo events auto forward|自动转发github repo事件",
     config=Config,
     homepage="https://github.com/HTony03/nonebot_plugin_github_release_notifier",
