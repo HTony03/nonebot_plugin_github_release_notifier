@@ -7,6 +7,11 @@ A plugin for monitoring GitHub repository releases and sending notifications.
 - Notify users of new releases through qq bots.
 - Customizable notification formats.
 
+## Write at the beginning
+This plugin uses aiohttp to obtain GitHub API data, but it is currently unable to stably connect to GitHub API in China
+
+If there are connection issues, please try using a proxy or other tool
+
 ## Installation
 
 ### Install via nb-cli
@@ -62,8 +67,8 @@ All configuration items are optional. Groups can add configurations via commands
 Before use, ensure that the `SUPERUSERS` configuration item in NoneBot is properly set.
 
 ```properties
-# Path to the SQLite database
-GITHUB_DATABASE_DIR="github_db.db"
+# Wheter to send the failure message when failed
+GITHUB_SEND_FALIURE=Ture
 
 # GitHub Token for accessing the GitHub API
 # Accepts any token, whether classic token or fine-grained access token

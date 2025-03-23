@@ -1,8 +1,8 @@
 import sqlite3
 from nonebot.log import logger
-from .config import config
+from .config import DATA_DIR
 
-DB_FILE = config.github_database_dir
+DB_FILE = DATA_DIR / "github_release_notifier.db"
 
 
 # Initialize the database

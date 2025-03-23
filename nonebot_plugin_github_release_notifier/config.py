@@ -1,18 +1,22 @@
 from nonebot import get_plugin_config
+from nonebot import logger, require
 from pydantic import BaseModel
+
+require("nonebot_plugin_localstore")
+import nonebot_plugin_localstore as store  # noqa: E402
+
+DATA_DIR = store.get_data_dir("nonebot_plugin_github_release_notifier")
+
+logger.info(f"nonebot_plugin_github_release_notifier 数据文件夹 ->  {DATA_DIR}")
 
 
 class Config(BaseModel):
-    github_database_dir: str = "github_db.db"
-    """
-    The path to the SQLite database.
-    """
-
     github_token: str = ""
     """
     GitHub token for accessing the GitHub API.
     Any token, either classic or fine-grained access token, is accepted.
     """
+    github_send_faliure: bool = True
 
     github_notify_group: dict = {}
     """

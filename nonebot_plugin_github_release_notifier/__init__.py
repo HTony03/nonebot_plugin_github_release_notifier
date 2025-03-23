@@ -6,7 +6,7 @@ from .config import config
 from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import init_database, load_groups
 
-__version__ = ver = "0.1.4"
+__version__ = ver = "0.1.5.dev1"
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",

@@ -65,8 +65,8 @@ nonebot.run()
 使用前请确保nonebot的`SUPERUSERS`配置项已配置
 
 ```properties
-# SQLite 数据库的路径
-GITHUB_DATABASE_DIR="github_db.db"
+# 在获取失败时是否发送失败信息
+GITHUB_SEND_FAILURE=True
 
 # 用于访问 GitHub API 的 GitHub Token
 # 接受任何 Token，无论是classic Token还是full_grained access Token

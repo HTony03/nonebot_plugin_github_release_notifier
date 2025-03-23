@@ -190,7 +190,13 @@ async def check_and_notify_updates():
                         )
                     elif "falt" in data:
                         logger.error(data["falt"])
-                        await bot.send_group_msg(group_id=group_id, message=data["falt"])
+                        if config.github_send_faliure:
+                            try:
+                                await bot.send_group_msg(group_id=group_id, message=data["falt"])
+                            except Exception as e:
+                                logger.error(
+                                    f"Failed to notify group {group_id} about the error: {e}"
+                                )
                         if config.github_disable_when_fail and "SSL" not in data["falt"]:
                             repo_config[data_type] = False
                             change_group_repo_cfg(group_id, repo, data_type, False)
