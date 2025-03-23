@@ -1,3 +1,4 @@
+from nonebot import get_plugin_config
 from pydantic import BaseModel
 
 
@@ -44,7 +45,7 @@ class Config(BaseModel):
     github_sending_templates: dict = {}
     """
     Sending templates for different events.
-    Format: {"commit": <your_template>, "issue": <your_template>, 
+    Format: {"commit": <your_template>, "issue": <your_template>,
     "pull_req": <your_template>, "release": <your_template>}
     Available parameters:
     - commit: repo, message, author, url
@@ -59,3 +60,6 @@ class Config(BaseModel):
     """
     Default settings for all repositories when adding a repository to groups.
     """
+
+
+config = get_plugin_config(Config)

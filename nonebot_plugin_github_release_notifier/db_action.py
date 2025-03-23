@@ -1,15 +1,13 @@
 import sqlite3
-from nonebot import get_plugin_config
 from nonebot.log import logger
-from .config import Config
+from .config import config
 
-config = get_plugin_config(Config)
 DB_FILE = config.github_database_dir
 
 
 # Initialize the database
 def init_database():
-    """Initialize the SQLite database and create 
+    """Initialize the SQLite database and create
     the necessary table if it doesn't exist."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -119,7 +117,7 @@ def add_group_repo_data(
     prs: bool = False,
     releases: bool = False,
 ):
-    """Add or update a group's repository 
+    """Add or update a group's repository
     configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()

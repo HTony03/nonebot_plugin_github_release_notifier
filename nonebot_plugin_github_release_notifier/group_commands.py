@@ -10,7 +10,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
-from .config import Config
+from .config import config
 from .db_action import (
     add_group_repo_data,
     remove_group_repo_data,
@@ -19,8 +19,7 @@ from .db_action import (
 )
 from .permission import permission_check
 
-# Load GitHub token from the configuration
-config = Config()
+
 GITHUB_TOKEN = config.github_token
 
 

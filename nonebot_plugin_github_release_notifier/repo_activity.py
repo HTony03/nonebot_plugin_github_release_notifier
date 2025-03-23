@@ -1,16 +1,15 @@
 import httpx
 from nonebot import get_bot
 from nonebot.log import logger
-from nonebot import get_plugin_config
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot
 from datetime import datetime
 import requests
 import time
 import ssl
-from .config import Config
-from .db_action import *
+from .config import config
+from .db_action import (load_last_processed, save_last_processed,
+                        init_database, load_groups, change_group_repo_cfg)
 
-config = get_plugin_config(Config)
 
 # Load GitHub token from environment variables
 GITHUB_TOKEN: str | None = config.github_token
@@ -18,10 +17,14 @@ max_retries: int = config.github_validate_retries
 delay: int = config.github_validate_delay
 
 default_sending_templates = {
-    "commit": "📜 New Commit in {repo}\n\nMessage: {message}\nAuthor: {author}\nURL: {url}",
-    "issue": "🐛 **New Issue in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nURL: {url}",
-    "pull_req": "🔀 **New Pull Request in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nURL: {url}",
-    "release": "🚀 **New Release for {repo}!**\n\n**Name:** {name}\nVersion: {version}\nDetails:\n {details}\nURL: {url}",
+    "commit": "📜 New Commit in {repo}\n\n"
+        "Message: {message}\nAuthor: {author}\nURL: {url}",
+    "issue": "🐛 **New Issue in {repo}!**\n\n"
+        "Title: {title}\nAuthor: {author}\nURL: {url}",
+    "pull_req": "🔀 **New Pull Request in {repo}!**\n\n"
+        "Title: {title}\nAuthor: {author}\nURL: {url}",
+    "release": "🚀 **New Release for {repo}!**\n\n"
+        "**Name:** {name}\nVersion: {version}\nDetails:\n {details}\nURL: {url}",
 }
 config_template = config.github_sending_templates
 

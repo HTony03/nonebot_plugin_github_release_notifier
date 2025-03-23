@@ -1,12 +1,12 @@
-from nonebot import require, get_plugin_config
+from nonebot import require
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 from .repo_activity import check_and_notify_updates
-from .config import Config
+from .config import config
 from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import init_database, load_groups
 
-__version__ = "0.1.2"
+__version__ = ver = "0.1.3"
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",
@@ -17,15 +17,14 @@ __plugin_meta__ = PluginMetadata(
     ),
     type='application',
     usage="github repo events auto forward|自动转发github repo事件",
-    config=Config,
     homepage="https://github.com/HTony03/nonebot_plugin_github_release_notifier",
     supported_adapters={"~onebot.v11"},
     extra={},
 )
+logger.info(f'initing nonebot_plugin_github_release_notifier version: {ver}')
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
-config = get_plugin_config(Config)
 
 # Parse the group-to-repo mapping from the config
 group_repo_dict = config.github_notify_group
@@ -84,7 +83,7 @@ def refresh_data_from_db():
     group_repo_dict = load_groups()
 
 
-@scheduler.scheduled_job("cron", minute="*/5") 
+@scheduler.scheduled_job("cron", minute="*/5")
 # Trigger every 5 minutes (:00, :05, :10, ...)
 async def _():
     """Check for all repos and notify groups."""
