@@ -1,4 +1,4 @@
-import httpx
+import aiohttp
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.log import logger
@@ -47,37 +47,36 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent):
     api_url = "https://api.github.com/rate_limit"
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(api_url, headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, headers=headers) as response:
+                response.raise_for_status()
+                data = await response.json()
 
-            # Extract rate limit information
-            rate_limit = data.get("rate", {})
-            remaining = rate_limit.get("remaining", "Unknown")
-            limit = rate_limit.get("limit", "Unknown")
-            reset_time = rate_limit.get("reset", "Unknown")
+                # Extract rate limit information
+                rate_limit = data.get("rate", {})
+                remaining = rate_limit.get("remaining", "Unknown")
+                limit = rate_limit.get("limit", "Unknown")
+                reset_time = rate_limit.get("reset", "Unknown")
 
-            # Format the reset time if available
-            if reset_time != "Unknown":
-                from datetime import datetime
+                # Format the reset time if available
+                if reset_time != "Unknown":
+                    from datetime import datetime
 
-                reset_time = datetime.fromtimestamp(reset_time).strftime(
-                    "%Y-%m-%d %H:%M:%S"
+                    reset_time = datetime.fromtimestamp(reset_time).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+
+                message = (
+                    f"**GitHub API Usage**\n"
+                    f"Remaining: {remaining}\n"
+                    f"Limit: {limit}\n"
+                    f"Reset Time: {reset_time}"
                 )
-
-            message = (
-                f"**GitHub API Usage**\n"
-                f"Remaining: {remaining}\n"
-                f"Limit: {limit}\n"
-                f"Reset Time: {reset_time}"
-            )
-            await bot.send(event, message=MessageSegment.text(message))
-            logger.info("Sent GitHub API usage information.")
-    except httpx.HTTPStatusError as e:
+                await bot.send(event, message=MessageSegment.text(message))
+                logger.info("Sent GitHub API usage information.")
+    except aiohttp.ClientResponseError as e:
         error_message = (
-            f"Failed to fetch GitHub API usage: {e.response.status_code} - "
-            f"{e.response.text}"
+            f"Failed to fetch GitHub API usage: {e.status} - {e.message}"
         )
         logger.error(error_message)
         await bot.send(event, message=MessageSegment.text(error_message))

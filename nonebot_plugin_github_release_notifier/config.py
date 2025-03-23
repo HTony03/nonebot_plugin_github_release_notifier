@@ -37,7 +37,7 @@ class Config(BaseModel):
     Format: {group_id: ['repo']}
     """
 
-    github_disable_when_fail: bool = True
+    github_disable_when_fail: bool = False
     """
     Disable the configuration when failing to retrieve repository data.
     """

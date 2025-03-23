@@ -1,12 +1,12 @@
-from nonebot import require
+from nonebot import require, get_driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_activity import check_and_notify_updates
+from .repo_activity import check_and_notify_updates, validate_github_token
 from .config import config
 from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import init_database, load_groups
 
-__version__ = ver = "0.1.3"
+__version__ = ver = "0.1.4"
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",
@@ -21,7 +21,7 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11"},
     extra={},
 )
-logger.info(f'initing nonebot_plugin_github_release_notifier version: {ver}')
+logger.info(f'Initializing nonebot_plugin_github_release_notifier version: {ver}')
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
@@ -81,6 +81,17 @@ def refresh_data_from_db():
     """Refresh the group-to-repo mapping from the database."""
     global group_repo_dict
     group_repo_dict = load_groups()
+
+
+# Asynchronous initialization
+async def plugin_init():
+    """Run asynchronous initialization tasks."""
+    await validate_github_token()
+
+
+# Register the initialization function to run when the bot starts
+driver = get_driver()
+driver.on_startup(plugin_init)
 
 
 @scheduler.scheduled_job("cron", minute="*/5")

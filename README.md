@@ -7,6 +7,11 @@
 - 通过qq bot通知用户新动态。
 - 可自定义通知格式。
 
+## 写在最前面
+本插件使用aiohttp获取github api数据，但是国内目前无法稳定连接github api
+
+如有连接问题请尝试使用代理或其他工具
+
 ## 安装
 
 ### 通过nb-cli安装
@@ -64,7 +69,7 @@ nonebot.run()
 GITHUB_DATABASE_DIR="github_db.db"
 
 # 用于访问 GitHub API 的 GitHub Token
-# 接受任何 Token，无论是经典 Token full_grained access Token
+# 接受任何 Token，无论是classic Token还是full_grained access Token
 GITHUB_TOKEN=""
 
 # 群组到仓库的映射(自动添加到数据库，以数据库配置作为第一数据源)
@@ -82,7 +87,7 @@ GITHUB_VALIDATE_DELAY=5
 GITHUB_DEL_GROUP_REPO={}
 
 # 在获取仓库数据失败时禁用配置
-GITHUB_DISABLE_WHEN_FAIL=True
+GITHUB_DISABLE_WHEN_FAIL=False
 
 # bot发送模版
 # 格式: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
