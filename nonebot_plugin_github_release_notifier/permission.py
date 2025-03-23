@@ -1,11 +1,11 @@
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import PrivateMessageEvent
+from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.adapters.onebot.v11.bot import Bot
 from nonebot.adapters.onebot.v11.event import MessageEvent
 
 # -----------------------------Permisssion&exclusive only commands---------------------------
 async def permission_check(event:MessageEvent, bot: Bot):
-    if isinstance(event, PrivateMessageEvent):
+    if not isinstance(event, GroupMessageEvent):
         return False
     group_id = event.group_id
     id = event.user_id

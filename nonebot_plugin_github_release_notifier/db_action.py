@@ -1,14 +1,16 @@
-from .config import Config
+import sqlite3
 from nonebot import get_plugin_config
 from nonebot.log import logger
-import sqlite3
+from .config import Config
 
 config = get_plugin_config(Config)
 DB_FILE = config.github_database_dir
 
+
 # Initialize the database
 def init_database():
-    """Initialize the SQLite database and create the necessary table if it doesn't exist."""
+    """Initialize the SQLite database and create 
+    the necessary table if it doesn't exist."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -34,6 +36,7 @@ def init_database():
     conn.commit()
     conn.close()
 
+
 def load_last_processed() -> dict:
     """Load the last processed timestamps from the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
@@ -50,9 +53,10 @@ def load_last_processed() -> dict:
             "commit": commits,
             "issue": issues,
             "pull_req": prs,
-            "release": releases
+            "release": releases,
         }
     return last_processed
+
 
 def save_last_processed(data: dict):
     """Save the last processed timestamps to the SQLite database."""
@@ -73,11 +77,12 @@ def save_last_processed(data: dict):
             timestamps.get("commit"),
             timestamps.get("issue"),
             timestamps.get("pull_req"),
-            timestamps.get("release")
+            timestamps.get("release"),
         ))
 
     conn.commit()
     conn.close()
+
 
 def load_groups() -> dict:
     """Load the group configurations from the SQLite database."""
@@ -100,19 +105,29 @@ def load_groups() -> dict:
             "commit": commits if commits else False,
             "issue": issues if issues else False,
             "pull_req": prs if prs else False,
-            "release": releases if releases else False
+            "release": releases if releases else False,
         })
         group_data[groupid] = data
     return group_data
 
-def add_group_repo_data(group_id: int, repo: str, commits: bool=False, issues: bool=False, prs: bool=False, releases: bool=False):
-    """Add or update a group's repository configuration in the SQLite database."""
+
+def add_group_repo_data(
+    group_id: int | str,
+    repo: str,
+    commits: bool = False,
+    issues: bool = False,
+    prs: bool = False,
+    releases: bool = False,
+):
+    """Add or update a group's repository 
+    configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     group_id = int(group_id)
 
     cursor.execute("""
-        INSERT INTO group_config (groupid, repo, commits, issues, prs, releases)
+        INSERT INTO group_config (groupid, repo, commits,
+issues, prs, releases)
         VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(groupid, repo) DO UPDATE SET
             commits=excluded.commits,
@@ -123,17 +138,27 @@ def add_group_repo_data(group_id: int, repo: str, commits: bool=False, issues: b
 
     conn.commit()
     conn.close()
-    
-def change_group_repo_cfg(group_id: int, repo: str, type: str, value: bool):
+
+
+def change_group_repo_cfg(group_id: int | str, repo: str,
+                          type: str, value: bool):
     """Change a group's repository configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     group_id = int(group_id)
 
     # Map type to database column
-    column_mapping = {'commit': 'commits', 'issue': 'issues', 'pull_req': 'prs', 'release': 'releases'}
+    column_mapping = {
+        "commit": "commits",
+        "issue": "issues",
+        "pull_req": "prs",
+        "release": "releases",
+    }
     if type not in column_mapping:
-        logger.error(f"Error: Invalid type format '{type}'. Must be one of {list(column_mapping.keys())}.")
+        logger.error(
+            f"Error: Invalid type format '{type}'. "
+            f"Must be one of {list(column_mapping.keys())}."
+        )
         conn.close()
         return
 
@@ -141,7 +166,8 @@ def change_group_repo_cfg(group_id: int, repo: str, type: str, value: bool):
     column = column_mapping[type]
 
     # Execute the update query
-    logger.info(f"Updating group {group_id}, repo {repo}, setting {column} to {value}")
+    logger.info(f"Updating group {group_id}, repo {repo}, "
+                f"setting {column} to {value}")
     cursor.execute(f"""
         UPDATE group_config
         SET {column}=?
@@ -154,8 +180,9 @@ def change_group_repo_cfg(group_id: int, repo: str, type: str, value: bool):
     # Commit changes and close the connection
     conn.commit()
     conn.close()
-    
-def remove_group_repo_data(group_id: int, repo: str):
+
+
+def remove_group_repo_data(group_id: int | str, repo: str):
     """Remove a group's repository configuration from the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
