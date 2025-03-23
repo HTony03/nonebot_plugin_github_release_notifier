@@ -12,7 +12,7 @@
 ### 通过nb-cli安装
 暂未实现
 ### 通过pip安装
-暂未实现
+```pip install nonebot-plugin-github-release-notifier```
 
 ### 复制仓库安装
 1. 克隆仓库：

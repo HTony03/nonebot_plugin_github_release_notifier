@@ -17,6 +17,8 @@ __plugin_meta__ = PluginMetadata(
     ),
     usage="github repo events auto forward|自动转发github repo事件",
     config=Config,
+    homepage="https://github.com/HTony03/nonebot_plugin_github_release_notifier",
+    supported_adapters={"~onebot.v11"},
     extra={},
 )
 
