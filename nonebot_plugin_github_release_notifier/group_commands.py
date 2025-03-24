@@ -25,7 +25,9 @@ GITHUB_TOKEN = config.github_token
 
 def link_to_repo_name(link: str) -> str:
     """Convert a repository link to its name."""
-    lin = link.replace("https://", "").replace("http://", "").replace(".git", "")
+    lin = link.replace("https://", "") \
+              .replace("http://", "") \
+              .replace(".git", "")
     if len(lin.split("/")) == 2:
         return lin
     return "/".join(lin.split("/")[1:3])
@@ -87,12 +89,14 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent):
 
 
 add_group_repo = on_command(
-    "add_group_repo", aliases={"add_repo"}, priority=5, permission=SUPERUSER | permission_check
+    "add_group_repo", aliases={"add_repo"},
+    priority=5, permission=SUPERUSER | permission_check
 )
 
 
 @add_group_repo.handle()
-async def handle_add_group_repo(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_add_group_repo(bot: Bot, event: GroupMessageEvent,
+                                args: Message = CommandArg()):
     """Add a new group-repo mapping to the configuration."""
     group_id = str(event.group_id)
     if not (repo := args.extract_plain_text()):
@@ -109,7 +113,8 @@ async def handle_add_group_repo(bot: Bot, event: GroupMessageEvent, args: Messag
 
 
 @add_group_repo.handle()
-async def handle_add_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Message = CommandArg()):
+async def handle_add_group_repo_p(bot: Bot, event: PrivateMessageEvent,
+                                  args: Message = CommandArg()):
     """Add a new group-repo mapping to the configuration."""
     if not (repo := args.extract_plain_text()):
         await bot.send(event, "No repository provided.")
@@ -125,7 +130,8 @@ async def handle_add_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Me
     default_config = config.github_default_config_setting
 
     add_group_repo_data(
-        group_id, repo_f, default_config, default_config, default_config, default_config
+        group_id, repo_f, default_config, default_config,
+        default_config, default_config
     )
     from . import refresh_data_from_db
 
@@ -135,12 +141,14 @@ async def handle_add_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Me
 
 
 del_group_repo = on_command(
-    "del_group_repo", aliases={"del_repo"}, priority=5, permission=SUPERUSER | permission_check
+    "del_group_repo", aliases={"del_repo"},
+    priority=5, permission=SUPERUSER | permission_check
 )
 
 
 @del_group_repo.handle()
-async def handle_del_group_repo(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_del_group_repo(bot: Bot, event: GroupMessageEvent,
+                                args: Message = CommandArg()):
     """Delete a group-repo mapping from the configuration."""
     group_id = str(event.group_id)
     if not (repo := args.extract_plain_text()):
@@ -155,7 +163,9 @@ async def handle_del_group_repo(bot: Bot, event: GroupMessageEvent, args: Messag
                 break
             else:
                 logger.error(f"Repo {repo} not found in group {group_id}")
-                await bot.send(event, f"Repo {repo} not found in group {group_id}")
+                await bot.send(
+                    event, f"Repo {repo} not found in group {group_id}"
+                )
                 return
         else:
             logger.error(f"Group {group_id} not found")
@@ -163,7 +173,9 @@ async def handle_del_group_repo(bot: Bot, event: GroupMessageEvent, args: Messag
             return
 
     remove_group_repo_data(group_id, repo_f)
-    await bot.send(event, f"Deleted group-repo mapping: {group_id} -> {repo_f}")
+    await bot.send(
+        event, f"Deleted group-repo mapping: {group_id} -> {repo_f}"
+    )
     from . import refresh_data_from_db
 
     refresh_data_from_db()
@@ -171,7 +183,8 @@ async def handle_del_group_repo(bot: Bot, event: GroupMessageEvent, args: Messag
 
 
 @del_group_repo.handle()
-async def handle_del_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Message = CommandArg()):
+async def handle_del_group_repo_p(bot: Bot, event: PrivateMessageEvent,
+                                  args: Message = CommandArg()):
     """Delete a group-repo mapping from the configuration."""
     if not (repo := args.extract_plain_text()):
         await bot.send(event, "No repository provided.")
@@ -192,7 +205,8 @@ async def handle_del_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Me
                 break
             else:
                 logger.error(f"Repo {repo} not found in group {group_id}")
-                await bot.send(event, f"Repo {repo} not found in group {group_id}")
+                await bot.send(event,
+                               f"Repo {repo} not found in group {group_id}")
                 return
         else:
             logger.error(f"Group {group_id} not found")
@@ -200,7 +214,8 @@ async def handle_del_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Me
             return
 
     remove_group_repo_data(group_id, repo_f)
-    await bot.send(event, f"Deleted group-repo mapping: {group_id} -> {repo_f}")
+    await bot.send(event,
+                   f"Deleted group-repo mapping: {group_id} -> {repo_f}")
     from . import refresh_data_from_db
 
     refresh_data_from_db()
@@ -208,12 +223,14 @@ async def handle_del_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Me
 
 
 change_group_repo_config = on_command(
-    "change_repo_config", aliases={"repo_cfg"}, priority=5, permission=SUPERUSER | permission_check
+    "change_repo_config", aliases={"repo_cfg"},
+    priority=5, permission=SUPERUSER | permission_check
 )
 
 
 @change_group_repo_config.handle()
-async def handle_change_group_repo(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_change_group_repo(bot: Bot, event: GroupMessageEvent,
+                                   args: Message = CommandArg()):
     """Delete a group-repo mapping from the configuration."""
     group_id = str(event.group_id)
     if not (repo := args.extract_plain_text()):
@@ -236,30 +253,38 @@ async def handle_change_group_repo(bot: Bot, event: GroupMessageEvent, args: Mes
     ]:
         await bot.send(
             event,
-            "Incorrect config, support:['commit','issue','pull_req','release','commits','issues','prs','releases']",
+            (
+                "Incorrect config, support:['commit','issue','pull_req',"
+                "'release','commits','issues','prs','releases']"
+            ),
         )
         return
-    val = True if repo.split(" ")[2] in ("True", "true", "TRUE", "T", "t", "1") else False
+    val = True if repo.split(" ")[2] in (
+        "True", "true", "TRUE", "T", "t", "1"
+    ) else False
 
     groups_repo = load_groups()
     for group_id, repo in {group_id: repo_f}.items():
         if group_id in groups_repo:
             if repo_f in map(lambda x: x["repo"], groups_repo[group_id]):
                 change_group_repo_cfg(group_id, repo_f, data, val)
-                await bot.send(event, f"Changed config for {repo_f}({data}) to {val}")
+                await bot.send(event,
+                               f"Changed config for {repo_f}({data}) to {val}")
                 from . import refresh_data_from_db
 
                 refresh_data_from_db()
             else:
                 logger.error(f"Repo {repo_f} not found in group {group_id}")
-                await bot.send(event, f"Repo {repo_f} not found in group {group_id}")
+                await bot.send(event,
+                               f"Repo {repo_f} not found in group {group_id}")
         else:
             logger.error(f"Group {group_id} not found")
             await bot.send(event, f"Group {group_id} not found")
 
 
 @change_group_repo_config.handle()
-async def handle_change_group_repo_p(bot: Bot, event: PrivateMessageEvent, args: Message = CommandArg()):
+async def handle_change_group_repo_p(bot: Bot, event: PrivateMessageEvent,
+                                     args: Message = CommandArg()):
     """Delete a group-repo mapping from the configuration."""
     if not (repo := args.extract_plain_text()):
         await bot.send(event, "No repository provided.")
@@ -285,30 +310,38 @@ async def handle_change_group_repo_p(bot: Bot, event: PrivateMessageEvent, args:
     ]:
         await bot.send(
             event,
-            "Incorrect config, support:['commit','issue','pull_req','release','commits','issues','prs','releases']",
+            (
+                "Incorrect config, support:['commit','issue','pull_req',"
+                "'release','commits','issues','prs','releases']"
+            ),
         )
         return
-    val = True if repo.split(" ")[3] in ("True", "true", "TRUE", "T", "t", "1") else False
+    val = True if repo.split(" ")[3] in (
+        "True", "true", "TRUE", "T", "t", "1"
+    ) else False
 
     groups_repo = load_groups()
     for group_id, repo in {group_id: repo}.items():
         if group_id in groups_repo:
             if repo_f in map(lambda x: x["repo"], groups_repo[group_id]):
                 change_group_repo_cfg(group_id, repo_f, data, val)
-                await bot.send(event, f"Changed config for {repo_f}({data}) to {val}")
+                await bot.send(event,
+                               f"Changed config for {repo_f}({data}) to {val}")
                 from . import refresh_data_from_db
 
                 refresh_data_from_db()
             else:
                 logger.error(f"Repo {repo_f} not found in group {group_id}")
-                await bot.send(event, f"Repo {repo_f} not found in group {group_id}")
+                await bot.send(event,
+                               f"Repo {repo_f} not found in group {group_id}")
         else:
             logger.error(f"Group {group_id} not found")
             await bot.send(event, f"Group {group_id} not found")
 
 
 show_group_repo = on_command(
-    "show_group_repo", aliases={"group_repo"}, priority=5, permission=SUPERUSER | permission_check
+    "show_group_repo", aliases={"group_repo"},
+    priority=5, permission=SUPERUSER | permission_check
 )
 
 
@@ -325,12 +358,16 @@ async def handle_show_group_repo(bot: Bot, event: GroupMessageEvent):
             repo_name = repo.get("repo", "Unknown")
             repo_other = repo
             repo_other.pop("repo")
-            config_str = ", ".join(f"\n{key}: {value}" for key, value in repo_other.items())
+            config_str = ", ".join(
+                f"\n{key}: {value}" for key, value in repo_other.items()
+            )
             final_str += f"\n- Repo: {repo_name}\n  Config: {config_str}"
     else:
         final_str += "\nNo repositories found for this group."
 
-    await bot.send(event, final_str.replace(": 1", ": True").replace(": 0", ": False"))
+    await bot.send(event,
+                   final_str.replace(": 1", ": True")
+                   .replace(": 0", ": False"))
 
 
 @show_group_repo.handle()
@@ -346,13 +383,17 @@ async def handle_show_group_repo_p(bot: Bot, event: PrivateMessageEvent):
                 repo_name = repo.get("repo", "Unknown")
                 repo_other = repo
                 repo_other.pop("repo")
-                config_str = ", ".join(f"\n{key}: {value}" for key, value in repo_other.items())
+                config_str = ", ".join(
+                    f"\n{key}: {value}" for key, value in repo_other.items()
+                )
                 final_str += f"\n- Repo: {repo_name}\n  Config: {config_str}"
         else:
             final_str += "\nNo repositories found for this group."
         final_str += "\n"
 
-    await bot.send(event, final_str.replace(": 1", ": True").replace(": 0", ": False"))
+    await bot.send(event,
+                   final_str.replace(": 1", ": True")
+                   .replace(": 0", ": False"))
 
 
 refresh = on_command(
@@ -369,7 +410,8 @@ async def handle_refresh(bot: Bot, event: MessageEvent):
 
 
 reload = on_command(
-    "reload_database", aliases={"reload_db"}, priority=5, permission=SUPERUSER | permission_check
+    "reload_database", aliases={"reload_db"},
+    priority=5, permission=SUPERUSER | permission_check
 )
 
 

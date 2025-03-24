@@ -16,7 +16,8 @@ class Config(BaseModel):
     GitHub token for accessing the GitHub API.
     Any token, either classic or fine-grained access token, is accepted.
     """
-    github_send_faliure: bool = True
+    github_send_faliure_group: bool = True
+    github_send_faliure_superuser: bool = False
 
     github_notify_group: dict = {}
     """

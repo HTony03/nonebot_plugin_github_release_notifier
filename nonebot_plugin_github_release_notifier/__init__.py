@@ -17,11 +17,15 @@ __plugin_meta__ = PluginMetadata(
     ),
     type='application',
     usage="github repo events auto forward|自动转发github repo事件",
-    homepage="https://github.com/HTony03/nonebot_plugin_github_release_notifier",
+    homepage=(
+        "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
+    ),
     supported_adapters={"~onebot.v11"},
     extra={},
 )
-logger.info(f'Initializing nonebot_plugin_github_release_notifier version: {ver}')
+logger.info(
+    f"Initializing nonebot_plugin_github_release_notifier version: {ver}"
+)
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
