@@ -29,10 +29,8 @@ default_sending_templates = {
     "pull_req": "🔀 **New Pull Request in {repo}!**\n\n"
                 "Title: {title}\nAuthor: {author}\nURL: {url}",
     "release": "🚀 **New Release for {repo}!**\n\n"
-               (
-                   "**Name:** {name}\nVersion: {version}\n"
-                   "Details:\n {details}\nURL: {url}"
-               ),
+               "**Name:** {name}\nVersion: {version}\n"
+               "Details:\n {details}\nURL: {url}",
 }
 config_template = config.github_sending_templates
 

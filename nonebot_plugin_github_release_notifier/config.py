@@ -68,3 +68,4 @@ class Config(BaseModel):
 
 
 config = get_plugin_config(Config)
+# logger.info('got configs: ' + str(config))

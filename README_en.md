@@ -68,9 +68,8 @@ Before use, ensure that the `SUPERUSERS` configuration item in NoneBot is proper
 
 ```properties
 # Wheter to send the failure message when failed
-# private is to send the msg to SUPERUSERS
 GITHUB_SEND_FAILURE_GROUP=True
-GITHUB_SEND_FAILURE_PRIVATE=False
+GITHUB_SEND_FALIURE_SUPERUSER=False
 
 # GitHub Token for accessing the GitHub API
 # Accepts any token, whether classic token or fine-grained access token

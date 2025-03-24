@@ -66,9 +66,8 @@ nonebot.run()
 
 ```properties
 # 在获取失败时是否发送失败信息
-# private为自动发送给SUPERUSERS
 GITHUB_SEND_FAILURE_GROUP=True
-GITHUB_SEND_FAILURE_PRIVATE=False
+GITHUB_SEND_FAILURE_SUPERUSER=False
 
 # 用于访问 GitHub API 的 GitHub Token
 # 接受任何 Token，无论是classic Token还是full_grained access Token
