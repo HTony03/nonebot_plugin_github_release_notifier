@@ -64,7 +64,7 @@ nonebot.run()
 
 使用前请确保nonebot的`SUPERUSERS`配置项已配置
 
-```properties
+```dotenv
 # 在获取失败时是否发送失败信息
 GITHUB_SEND_FAILURE_GROUP=True
 GITHUB_SEND_FAILURE_SUPERUSER=False
@@ -103,7 +103,6 @@ GITHUB_SENDING_TEMPLATES={}
 
 # repo添加入群聊时的默认设置
 GITHUB_DEFAULT_CONFIG_SETTING=True
-
 ```
 
 ### 命令

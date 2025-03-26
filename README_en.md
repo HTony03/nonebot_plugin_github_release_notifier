@@ -66,7 +66,7 @@ All configuration items are optional. Groups can add configurations via commands
 
 Before use, ensure that the `SUPERUSERS` configuration item in NoneBot is properly set.
 
-```properties
+```dotenv
 # Wheter to send the failure message when failed
 GITHUB_SEND_FAILURE_GROUP=True
 GITHUB_SEND_FALIURE_SUPERUSER=False
