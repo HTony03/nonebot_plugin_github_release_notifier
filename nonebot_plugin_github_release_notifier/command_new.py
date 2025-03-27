@@ -1,6 +1,6 @@
-import aiohttp
+# import aiohttp
 from nonebot import CommandGroup
-from nonebot.adapters.onebot.v11 import Bot, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
@@ -207,9 +207,9 @@ async def show_repo(bot: Bot, event: MessageEvent):
 @repo_group.command("refresh", aliases={"refresh_repo"}).handle()
 async def refresh_repo(bot: Bot, event: MessageEvent):
     """Refresh repository data."""
-    from . import check_and_notify_updates
+    from . import check_repo_updates
     await bot.send(event, "Refreshing repository data...")
-    await check_and_notify_updates()
+    await check_repo_updates()
     await bot.send(event, "Repository data refreshed.")
 
 

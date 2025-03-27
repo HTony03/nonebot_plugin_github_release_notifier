@@ -202,7 +202,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
     ).format(**datas)
 
 
-async def check_and_notify_updates():
+async def check_repo_updates():
     """
     Check for new commits, issues, PRs, and releases for all repos
     and notify groups.

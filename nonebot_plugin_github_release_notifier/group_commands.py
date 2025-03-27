@@ -404,9 +404,9 @@ refresh = on_command(
 @refresh.handle()
 async def handle_refresh(bot: Bot, event: MessageEvent):
     await bot.send(event, "Refreshing GitHub stats.")
-    from . import check_and_notify_updates
+    from . import check_repo_updates
 
-    await check_and_notify_updates()
+    await check_repo_updates()
 
 
 reload = on_command(

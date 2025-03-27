@@ -1,11 +1,11 @@
 from nonebot import require, get_driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_activity import check_and_notify_updates, validate_github_token
+from .repo_activity import check_repo_updates, validate_github_token
 from .config import config
 from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import init_database, load_groups
-from .command_new import *
+from .command_new import repo_group
 
 __version__ = ver = "0.1.5.dev1"
 
@@ -105,4 +105,4 @@ driver.on_startup(plugin_init)
 # Trigger every 5 minutes (:00, :05, :10, ...)
 async def _():
     """Check for all repos and notify groups."""
-    await check_and_notify_updates()
+    await check_repo_updates()
