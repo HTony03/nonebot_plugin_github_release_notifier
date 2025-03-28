@@ -3,11 +3,17 @@ from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 from .repo_activity import check_repo_updates, validate_github_token
 from .config import config
-from .group_commands import add_group_repo_data, remove_group_repo_data
-from .db_action import init_database, load_groups
-from .command_new import repo_group
+# from .group_commands import add_group_repo_data, remove_group_repo_data
+from .db_action import (
+    init_database,
+    load_groups,
+    add_group_repo_data,
+    remove_group_repo_data
+)
+from .commands import repo_group
 
-__version__ = ver = "0.1.5.dev1"
+__version__ = ver = "0.1.5.dev2"
+cmd_group = repo_group
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",

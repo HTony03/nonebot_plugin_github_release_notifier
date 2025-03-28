@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_github_release_notifier"
-version = "0.1.5.dev1"
+version = "0.1.5.dev2"
 description = "A plugin for nonebot & onebot to notify group members of new commits, issues, and PRs in GitHub repos."
 authors = [
   { name = "HTony03", email = "HTony03@foxmail.com" },
@@ -16,13 +16,14 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-license = { text = "MIT" }
+license = "MIT"
 
 dependencies = [
     "aiohttp~=3.11",
     "nonebot-adapter-onebot~=2.4",
     "nonebot-plugin-apscheduler~=0.3",
     "nonebot-plugin-localstore~=0.7",
+    "nonebot-plugin-htmlrender~=0.5",
     "nonebot2~=2.3"
 ]
 

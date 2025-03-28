@@ -1,11 +1,12 @@
 # import aiohttp
-from nonebot import CommandGroup
+from nonebot import CommandGroup, on_command
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     GroupMessageEvent,
     PrivateMessageEvent,
+    MessageSegment,
 )
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
@@ -18,6 +19,7 @@ from .db_action import (
     change_group_repo_cfg,
 )
 from .permission import permission_check
+from .pic_process import text_to_pic
 
 
 GITHUB_TOKEN = config.github_token
@@ -41,7 +43,12 @@ repo_group = CommandGroup(
 )
 
 
-@repo_group.command("add", aliases={"add_repo"}).handle()
+@on_command(
+    'add_group_repo',
+    aliases={'add_repo'},
+    permission=SUPERUSER | permission_check
+).handle()
+@repo_group.command("add").handle()
 async def add_repo(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -64,7 +71,11 @@ async def add_repo(
         await bot.send(event, "Group ID is required for private messages.")
         return
 
-    add_group_repo_data(group_id, repo)
+    add_group_repo_data(group_id, repo,
+                        config.github_default_config_setting,
+                        config.github_default_config_setting,
+                        config.github_default_config_setting,
+                        config.github_default_config_setting)
     from . import (
         refresh_data_from_db,
     )
@@ -73,7 +84,13 @@ async def add_repo(
     logger.info(f"Added repository mapping: {group_id} -> {repo}")
 
 
-@repo_group.command("delete", aliases={"del_repo"}).handle()
+@on_command(
+    'delete_group_repo',
+    aliases={'del_repo'},
+    permission=SUPERUSER | permission_check
+).handle()
+@repo_group.command("delete").handle()
+@repo_group.command("del").handle()
 async def delete_repo(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -112,7 +129,12 @@ async def delete_repo(
     logger.info(f"Deleted repository mapping: {group_id} -> {repo}")
 
 
-@repo_group.command("change", aliases={"change_repo"}).handle()
+@on_command(
+    'change_group_repo_cfg',
+    aliases={'change_repo'},
+    permission=SUPERUSER | permission_check
+).handle()
+@repo_group.command("config").handle()
 async def change_repo(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -159,7 +181,12 @@ async def change_repo(
     )
 
 
-@repo_group.command("show", aliases={"show_repo"}).handle()
+@on_command(
+    'show_group_repo',
+    aliases={'show_repo'},
+    permission=SUPERUSER | permission_check
+).handle()
+@repo_group.command("show").handle()
 async def show_repo(bot: Bot, event: MessageEvent):
     """Show repository mappings."""
     group_id = (
@@ -201,16 +228,25 @@ async def show_repo(bot: Bot, event: MessageEvent):
     else:
         message = f"Repository data not found in group {group_id}."
 
+    if '\n' in message:
+        html_lines = '<p>' + message.replace('\n', '<br />') + '</p>'
+        message = MessageSegment.image(await text_to_pic(html_lines))
+ 
     await bot.send(event, message)
 
 
-@repo_group.command("refresh", aliases={"refresh_repo"}).handle()
+@on_command(
+    'refresh_group_repo',
+    aliases={'refresh_repo'},
+    permission=SUPERUSER | permission_check
+).handle()
+@repo_group.command("refresh").handle()
 async def refresh_repo(bot: Bot, event: MessageEvent):
     """Refresh repository data."""
     from . import check_repo_updates
     await bot.send(event, "Refreshing repository data...")
     await check_repo_updates()
-    await bot.send(event, "Repository data refreshed.")
+    # await bot.send(event, "Repository data refreshed.")
 
 
 # TODO: repo.info command
