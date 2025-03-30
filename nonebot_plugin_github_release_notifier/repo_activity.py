@@ -1,20 +1,18 @@
 import aiohttp
-from nonebot import get_bot
+from nonebot import get_bot, get_driver
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot
 from datetime import datetime
-from nonebot.config import Config
 import asyncio
 import ssl
 from .db_action import (
     load_last_processed,
     save_last_processed,
-    init_database,
     load_groups,
     change_group_repo_cfg,
 )
 from .config import config
-superusers = Config().superusers
+superusers = get_driver().config.superusers
 
 # Load GitHub token from environment variables
 GITHUB_TOKEN: str | None = config.github_token
@@ -218,7 +216,7 @@ async def check_repo_updates():
                 ("commit", "commits"),
                 ("issue", "issues"),
                 ("pull_req", "pulls"),
-                ("release", "releases/latest"),
+                ("release", "releases"),
             ]:
                 if repo_config.get(data_type, False):
                     data = await fetch_github_data(repo, endpoint)
@@ -267,9 +265,3 @@ async def check_repo_updates():
                             )
 
     save_last_processed(last_processed)
-
-
-# Initialize the database at startup
-init_database()
-
-# Validate the GitHub token at startup

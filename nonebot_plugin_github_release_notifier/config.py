@@ -5,7 +5,7 @@ from pydantic import BaseModel
 require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store  # noqa: E402
 
-DATA_DIR = store.get_data_dir("nonebot_plugin_github_release_notifier")
+DATA_DIR = store.get_plugin_data_dir()
 
 logger.info(f"nonebot_plugin_github_release_notifier 数据文件夹 ->  {DATA_DIR}")
 
@@ -67,5 +67,9 @@ class Config(BaseModel):
     """
 
 
-config = get_plugin_config(Config)
+try:
+    config = get_plugin_config(Config)
+except Exception as e:
+    logger.error(f"nonebot_plugin_github_release_notifier 配置读取失败: {e}")
+    config = Config()
 # logger.info('got configs: ' + str(config))

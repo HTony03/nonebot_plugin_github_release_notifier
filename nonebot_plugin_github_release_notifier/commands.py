@@ -1,4 +1,4 @@
-# import aiohttp
+import aiohttp
 from nonebot import CommandGroup, on_command
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.log import logger
@@ -23,6 +23,61 @@ from .pic_process import text_to_pic
 
 
 GITHUB_TOKEN = config.github_token
+
+
+# Command to check remaining GitHub API usage
+check_api_usage = on_command(
+    "check_api_usage", aliases={"api_usage", "github_usage"}, priority=5
+)
+
+
+@check_api_usage.handle()
+async def handle_check_api_usage(bot: Bot, event: MessageEvent):
+    """Fetch and send the remaining GitHub API usage limits."""
+    headers = {}
+    if GITHUB_TOKEN:
+        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+
+    api_url = "https://api.github.com/rate_limit"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, headers=headers) as response:
+                response.raise_for_status()
+                data = await response.json()
+
+                # Extract rate limit information
+                rate_limit = data.get("rate", {})
+                remaining = rate_limit.get("remaining", "Unknown")
+                limit = rate_limit.get("limit", "Unknown")
+                reset_time = rate_limit.get("reset", "Unknown")
+
+                # Format the reset time if available
+                if reset_time != "Unknown":
+                    from datetime import datetime
+
+                    reset_time = datetime.fromtimestamp(reset_time).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+
+                message = (
+                    f"**GitHub API Usage**\n"
+                    f"Remaining: {remaining}\n"
+                    f"Limit: {limit}\n"
+                    f"Reset Time: {reset_time}"
+                )
+                await bot.send(event, message=MessageSegment.text(message))
+                logger.info("Sent GitHub API usage information.")
+    except aiohttp.ClientResponseError as e:
+        error_message = (
+            f"Failed to fetch GitHub API usage: {e.status} - {e.message}"
+        )
+        logger.error(error_message)
+        await bot.send(event, message=MessageSegment.text(error_message))
+    except Exception as e:
+        fatal_message = f"Fatal error while fetching GitHub API usage: {e}"
+        logger.error(fatal_message)
+        await bot.send(event, message=MessageSegment.text(fatal_message))
 
 
 def link_to_repo_name(link: str) -> str:
@@ -168,6 +223,14 @@ async def change_repo(
             event, f"Repository {repo} not found in group {group_id}."
         )
         return
+    if config_key not in [
+        "commit", "issue", "pull_req", "release",
+        "commits", "issues", "prs", "releases"
+    ]:
+        await bot.send(
+            event, f"Invalid configuration key: {config_key}."
+        )
+        return
 
     change_group_repo_cfg(group_id, repo, config_key, config_value)
     from . import refresh_data_from_db
@@ -231,7 +294,7 @@ async def show_repo(bot: Bot, event: MessageEvent):
     if '\n' in message:
         html_lines = '<p>' + message.replace('\n', '<br />') + '</p>'
         message = MessageSegment.image(await text_to_pic(html_lines))
- 
+
     await bot.send(event, message)
 
 
@@ -250,3 +313,92 @@ async def refresh_repo(bot: Bot, event: MessageEvent):
 
 
 # TODO: repo.info command
+@on_command(
+    'repo_info',
+    aliases={'repo.info'}
+).handle()
+async def repo_info(
+    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+):
+    """Show repository information."""
+    command_args = args.extract_plain_text().split()
+    if len(command_args) < 1:
+        await bot.send(event, "Usage: repo info <repo>")
+        return
+
+    repo = link_to_repo_name(command_args[0])
+
+    headers = {}
+    if GITHUB_TOKEN:
+        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+
+    api_url = "https://api.github.com/repos/" + repo
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, headers=headers) as response:
+                response.raise_for_status()
+                data = await response.json()
+                # Extract repository information
+                repo_name = data.get("full_name", "Unknown")
+                description = data.get("description", "No description")
+                owner = data.get("owner", {}).get("login", "Unknown")
+                url = data.get("html_url", "Unknown")
+                licence = data.get("license", {}).get("name", "Unknown")
+                language = data.get("language", "Unknown")
+                homepage = data.get("homepage", "Unknown")
+                default_branch = data.get("default_branch", "Unknown")
+
+                stars = data.get("stargazers_count", 0)
+                forks = data.get("forks", 0)
+
+                issue_count = data.get("open_issues_count", 0)
+
+                created = data.get("created_at", "Unknown")
+                updated = data.get("updated_at", "Unknown")
+
+                is_template = data.get("is_template", False)
+                is_private = data.get("private", False)
+                allow_fork = data.get("allow_forking", False)
+                is_fork = data.get("fork", False)
+                is_archived = data.get("archived", False)
+
+                message = (
+                        f"**Repository Information**\n"
+                        f"- Name: {repo_name}\n"
+                        f"- Description: {description}\n"
+                        f"- Owner: {owner}\n"
+                        f"- URL: {url}\n"
+                        f"- License: {licence}\n"
+                        f"- Language: {language}\n"
+                        f"- Homepage: {homepage}\n"
+                        f"Default branch: {default_branch}\n\n"
+                        f"Repo data\n"
+                        f"Stars: {stars}\n"
+                        f"Forks: {forks}\n"
+                        f"Issue count: {issue_count}\n\n"
+                        f"Repo statics & status\n"
+                        f"Created time: {created}\n"
+                        f"Last updated: {updated}\n"
+                        f"{'The repo is a template\n' if is_template else ''}"
+                        f"{'The repo is private repo\n' if is_private else ''}"
+                        f"{'' if allow_fork else "The repo "
+                                                 "doesn't allow forks\n"}"
+                        f"{'The repo is a fork\n' if is_fork else ''}"
+                        f"{'The repo is archived\n' if is_archived else ''}"
+                    )
+        message = MessageSegment.image(
+                await text_to_pic(
+                                      f'<p>'
+                                      f'{message.replace("\n", "<br />")}'
+                                      '</p>'
+                      ))
+    except aiohttp.ClientResponseError as e:
+        message = (
+            f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
+        )
+        logger.error(message)
+    except Exception as e:
+        message = f"Fatal error while fetching GitHub repo usage: {e}"
+        logger.error(message)
+    await bot.send(event, message)

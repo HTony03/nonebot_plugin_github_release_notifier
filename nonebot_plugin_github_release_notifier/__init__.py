@@ -12,7 +12,7 @@ from .db_action import (
 )
 from .commands import repo_group
 
-__version__ = ver = "0.1.5.dev2"
+__version__ = ver = "0.1.6"
 cmd_group = repo_group
 
 __plugin_meta__ = PluginMetadata(

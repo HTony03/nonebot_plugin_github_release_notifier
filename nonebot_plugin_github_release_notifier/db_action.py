@@ -151,6 +151,10 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
         "issue": "issues",
         "pull_req": "prs",
         "release": "releases",
+        "commits": "commits",
+        "issues": "issues",
+        "prs": "prs",
+        "releases": "releases",
     }
     if type not in column_mapping:
         logger.error(
