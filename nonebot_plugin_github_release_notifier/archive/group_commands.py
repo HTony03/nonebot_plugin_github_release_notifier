@@ -17,7 +17,6 @@ from .db_action import (
     load_groups,
     change_group_repo_cfg,
 )
-from .pic_process import text_to_pic
 from .permission import permission_check
 
 
