@@ -382,7 +382,7 @@ async def repo_info(
                         f"Last updated: {updated}\n"
                         f"{'The repo is a template\n' if is_template else ''}"
                         f"{'The repo is private repo\n' if is_private else ''}"
-                        f"{'' if allow_fork else "The repo doesn't allow forks\n"}"
+                        f"{'' if allow_fork else 'The repo does not allow forks\n'}"
                         f"{'The repo is a fork\n' if is_fork else ''}"
                         f"{'The repo is archived\n' if is_archived else ''}"
                     )
