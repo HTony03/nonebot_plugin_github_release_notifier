@@ -11,8 +11,9 @@ from .db_action import (
     remove_group_repo_data
 )
 from .commands import repo_group
+from .config import Config
 
-__version__ = ver = "0.1.6"
+__version__ = ver = "0.1.6.1"
 cmd_group = repo_group
 
 __plugin_meta__ = PluginMetadata(
@@ -27,6 +28,7 @@ __plugin_meta__ = PluginMetadata(
     homepage=(
         "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
     ),
+    config=Config(),
     supported_adapters={"~onebot.v11"},
     extra={},
 )
