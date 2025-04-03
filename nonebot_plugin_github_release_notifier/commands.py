@@ -388,12 +388,9 @@ Last updated: {updated}''' + \
                     'The repo is a fork\n' if is_fork else '' + \
                     'The repo is archived\n' if is_archived else ''
 
+        re_text = message.replace('\n', '<br />')
         message = MessageSegment.image(
-                await text_to_pic(
-                                      f'<p>'
-                                      f'{message.replace("\n", "<br />")}'
-                                      '</p>'
-                      ))
+                await text_to_pic(f'<p>{re_text}</p>'))
     except aiohttp.ClientResponseError as e:
         message = (
             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
