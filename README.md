@@ -78,10 +78,10 @@ GITHUB_TOKEN=""
 GITHUB_NOTIFY_GROUP={}
 
 # 验证 GitHub Token 的最大重试次数
-GITHUB_VALIDATE_RETRIES=3
+GITHUB_RETRIES=3
 
 # 每次验证重试之间的延迟（以秒为单位）
-GITHUB_VALIDATE_DELAY=5
+GITHUB_RETRY_DELAY=5
 
 # 删除群组仓库(用于删除数据库配置)
 # 格式: {group_id: ['repo']}
@@ -108,7 +108,7 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ### 命令
 (此部分中的repo名均可使用repo链接，repo的.git链接代替)
 #### **1. 添加群组仓库映射**
-**命令**: `/add_group_repo` 或 `/add_repo`  
+**命令**: `/add_group_repo` `/repo.add` 或 `/add_repo`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 添加一个新的群组到仓库的映射。
 

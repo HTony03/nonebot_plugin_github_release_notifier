@@ -26,12 +26,12 @@ class Config(BaseModel):
     (, pull_req: bool)(, release: bool)}]}
     """
 
-    github_validate_retries: int = 3
+    github_retries: int = 3
     """
     The maximum number of retries for validating the GitHub token.
     """
 
-    github_validate_delay: int = 5
+    github_retry_delay: int = 5
     """
     The delay (in seconds) between each validation retry.
     """

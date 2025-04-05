@@ -80,10 +80,10 @@ GITHUB_TOKEN=""
 GITHUB_NOTIFY_GROUP={}
 
 # Maximum retry attempts for validating the GitHub Token
-GITHUB_VALIDATE_RETRIES=3
+GITHUB_RETRIES=3
 
 # Delay between each validation retry (in seconds)
-GITHUB_VALIDATE_DELAY=5
+GITHUB_RETRY_DELAY=5
 
 # Delete group-repository mappings (used to remove database configurations)
 # Format: {group_id: ['repo']}

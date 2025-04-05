@@ -12,12 +12,18 @@ from .db_action import (
     change_group_repo_cfg,
 )
 from .config import config
+from nonebot import require
+require("nonebot_plugin_htmlrender")
+from nonebot_plugin_htmlrender import html_to_pic
 superusers = get_driver().config.superusers
 
 # Load GitHub token from environment variables
 GITHUB_TOKEN: str | None = config.github_token
-max_retries: int = config.github_validate_retries
-delay: int = config.github_validate_delay
+max_retries: int = config.github_retries
+delay: int = config.github_retry_delay
+
+# Global cache to store API responses
+api_cache = {}
 
 default_sending_templates = {
     "commit": "📜 New Commit in {repo}\n\n"
@@ -77,8 +83,21 @@ async def validate_github_token(retries=3, delay=5) -> bool:
     return False
 
 
-async def fetch_github_data(repo: str, endpoint: str) -> dict | None:
-    """Fetch data from the GitHub API for a specific repo and endpoint."""
+async def fetch_github_data(repo: str, endpoint: str) -> list | None:
+    """
+    Fetch data from the GitHub API
+    for a specific repo and endpoint.
+    """
+    cache = api_cache.get(repo, {}).get(endpoint, [])
+
+    # Check if the data exists in the cache
+    if cache:
+        logger.info(f'Using cached data for {repo}/{endpoint}')
+        if cache[0] == []:
+            return []
+        return cache
+
+    # If not in cache, fetch from the API
     api_url = f"https://api.github.com/repos/{repo}/{endpoint}"
     headers = (
         {"Authorization": f"token {GITHUB_TOKEN}"}
@@ -86,32 +105,40 @@ async def fetch_github_data(repo: str, endpoint: str) -> dict | None:
         else {}
     )
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as response:
-                response.raise_for_status()
-                return await response.json()
-    except aiohttp.ClientResponseError as e:
-        logger.error(
-            f"HTTP error while fetching GitHub {endpoint} for {repo}: {e}"
-        )
-        return {
-            "falt": f"Failed to fetch GitHub {endpoint} for {repo}: {e}"
-        }
-    except Exception as e:
-        logger.opt(exception=e).error(repr(e))
-        logger.error(
-            f"Unexpected error while fetching GitHub "
-            f"{endpoint} for {repo}: "
-            f"{e}"
-        )
-        return {
-            "falt": (
+    retries = 1
+    errs = []
+    while retries <= max_retries:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url, headers=headers) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    # Cache the response
+                    repo_data = api_cache.get(repo, {})
+                    repo_data[endpoint] = data if data else [[]]
+                    api_cache[repo] = repo_data
+                    return data
+        except aiohttp.ClientResponseError as e:
+            logger.error(
+                f"HTTP error while fetching GitHub {endpoint} for {repo} "
+                f"in attempt {retries}: {e}"
+            )
+            errs.append(e)
+        except Exception as e:
+            logger.error(
                 f"Unexpected error while fetching GitHub "
-                f"{endpoint} for {repo}: "
+                f"{endpoint} for {repo} in attempt {retries}: "
                 f"{e}"
             )
-        }
+            errs.append(e)
+        await asyncio.sleep(delay)
+        retries += 1
+
+    return {
+        "falt": f"Failed to fetch {endpoint} for {repo} after "
+                f"{max_retries} attempts.",
+        'errors': errs,
+    }
 
 
 async def notify(
@@ -140,9 +167,12 @@ async def notify(
         ):
             message = format_message(repo, item, data_type)
             try:
-                await bot.send_group_msg(
-                    group_id=group_id, message=MessageSegment.text(message)
-                )
+                if 'issue' == data_type and 'pull' in message:
+                    pass
+                else:
+                    await bot.send_group_msg(
+                        group_id=group_id, message=MessageSegment.text(message)
+                    )
             except Exception as e:
                 logger.error(
                         f"Failed to notify group {group_id} about {data_type} "
@@ -205,9 +235,15 @@ async def check_repo_updates():
     Check for new commits, issues, PRs, and releases for all repos
     and notify groups.
     """
-    bot: Bot = get_bot()
-    last_processed = load_last_processed()
-    group_repo_dict = load_groups()
+    global api_cache
+    api_cache = {}
+    try:
+        bot: Bot = get_bot()
+        last_processed = load_last_processed()
+        group_repo_dict = load_groups()
+    except Exception:
+        return
+
     for group_id, repo_configs in group_repo_dict.items():
         group_id = int(group_id)
         for repo_config in repo_configs:
@@ -219,13 +255,14 @@ async def check_repo_updates():
                 ("release", "releases"),
             ]:
                 if repo_config.get(data_type, False):
+                    # Fetch data (use cache if available)
                     data = await fetch_github_data(repo, endpoint)
                     if "falt" not in data and data:
                         await notify(
                             bot,
                             group_id,
                             repo,
-                            data if isinstance(data, list) else [data],
+                            data,
                             data_type,
                             last_processed,
                         )
@@ -233,9 +270,22 @@ async def check_repo_updates():
                         logger.error(data["falt"])
                         if config.github_send_faliure_group:
                             try:
+                                html = '<p>GitHub API Error:</p>'
+                                html += "".join(
+                                    (
+                                        "<p style='white-space=pre-wrap'>"
+                                        + x
+                                        + "</p>"
+                                    )
+                                    for x in data["errors"]
+                                )
+                                pic = await html_to_pic(html)
                                 await bot.send_group_msg(
                                     group_id=group_id,
-                                    message=data["falt"]
+                                    message=(
+                                        MessageSegment.text(data["falt"])
+                                        + MessageSegment.image(pic)
+                                    )
                                 )
                             except Exception as e:
                                 logger.error(
@@ -245,9 +295,20 @@ async def check_repo_updates():
                         if config.github_send_faliure_superuser:
                             for users in superusers:
                                 try:
+                                    html = '<p>GitHub API Error:</p>'
+                                    html += "".join(
+                                        "<p style='white-space=pre-wrap'>"
+                                        + x
+                                        + "</p>"
+                                        for x in data["errors"]
+                                    )
+                                    pic = await html_to_pic(html)
                                     await bot.send_private_msg(
                                         user_id=users,
-                                        message=data["falt"]
+                                        message=(
+                                            MessageSegment.text(data["falt"])
+                                            + MessageSegment.image(pic)
+                                        )
                                     )
                                 except Exception as e:
                                     logger.error(
@@ -264,4 +325,4 @@ async def check_repo_updates():
                                 group_id, repo, data_type, False
                             )
 
-    save_last_processed(last_processed)
+        save_last_processed(last_processed)
