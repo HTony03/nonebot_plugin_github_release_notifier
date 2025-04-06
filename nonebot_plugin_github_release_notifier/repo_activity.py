@@ -27,14 +27,17 @@ api_cache = {}
 
 default_sending_templates = {
     "commit": "📜 New Commit in {repo}\n\n"
-              "Message: {message}\nAuthor: {author}\nURL: {url}",
+              "Message: {message}\nAuthor: {author}\n"
+              "Commit time: {time}\nURL: {url}",
     "issue": "🐛 **New Issue in {repo}!**\n\n"
-             "Title: {title}\nAuthor: {author}\nURL: {url}",
+             "Title: {title}\nAuthor: {author}\n"
+             "Issue created time: {time}\nURL: {url}",
     "pull_req": "🔀 **New Pull Request in {repo}!**\n\n"
-                "Title: {title}\nAuthor: {author}\nURL: {url}",
+                "Title: {title}\nAuthor: {author}\n"
+                "Pr created at: {time}\nURL: {url}",
     "release": "🚀 **New Release for {repo}!**\n\n"
                "**Name:** {name}\nVersion: {version}\n"
-               "Details:\n {details}\nURL: {url}",
+               "Details:\n {details}\nRelease time:{time}\nURL: {url}",
 }
 config_template = config.github_sending_templates
 
@@ -92,7 +95,7 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | None:
 
     # Check if the data exists in the cache
     if cache:
-        logger.info(f'Using cached data for {repo}/{endpoint}')
+        logger.debug(f'Using cached data for {repo}/{endpoint}')
         if cache[0] == []:
             return []
         return cache
@@ -199,6 +202,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
             "message": item["commit"]["message"],
             "author": item["commit"]["committer"]["name"],
             "url": item["html_url"],
+            "time": item["commit"]["committer"]["date"],
         }
     elif data_type == "issue":
         datas = {
@@ -206,6 +210,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
             "title": item["title"],
             "author": item["user"]["login"],
             "url": item["html_url"],
+            "time": item["created_at"],
         }
     elif data_type == "pull_req":
         datas = {
@@ -213,6 +218,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
             "title": item["title"],
             "author": item["user"]["login"],
             "url": item["html_url"],
+            "time": item["created_at"],
         }
     elif data_type == "release":
         datas = {
@@ -221,6 +227,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
             "version": item.get("tag_name", "Unknown Version"),
             "details": item.get("body", "No description provided."),
             "url": item.get("html_url", "No URL"),
+            "time": item.get("published_at", "Unknown time"),
         }
     else:
         return "Unknown data type."
@@ -325,4 +332,4 @@ async def check_repo_updates():
                                 group_id, repo, data_type, False
                             )
 
-        save_last_processed(last_processed)
+    save_last_processed(last_processed)
