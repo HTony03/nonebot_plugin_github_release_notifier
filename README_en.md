@@ -79,10 +79,10 @@ GITHUB_TOKEN=""
 # Format: {group_id: [{repo: str (, commit: bool)(, issue: bool)(, pull_req: bool)(, release: bool)}]}
 GITHUB_NOTIFY_GROUP={}
 
-# Maximum retry attempts for validating the GitHub Token
+# Maximum retry attempts for refreshing
 GITHUB_RETRIES=3
 
-# Delay between each validation retry (in seconds)
+# Delay between each refresh retry (in seconds)
 GITHUB_RETRY_DELAY=5
 
 # Delete group-repository mappings (used to remove database configurations)
@@ -95,10 +95,10 @@ GITHUB_DISABLE_WHEN_FAIL=True
 # Bot sending templates
 # Format: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
 # Available parameters:
-# commit: repo, message, author, url
-# issue: repo, title, author, url
-# pull_req: repo, title, author, url
-# release: repo, name, version, details, url
+# commit: repo, message, author, url, time
+# issue: repo, title, author, url, time
+# pull_req: repo, title, author, url, time
+# release: repo, name, version, details, url, time
 # Usage: '{<parameter>}' (implemented using Python's format functionality)
 # Defaults to the standard template if not set
 GITHUB_SENDING_TEMPLATES={}
@@ -108,47 +108,47 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ```
 
 ### Commands
-(Repository names in this section can use repository links or .git links as substitutes)
+(Repository names in this section can use repository links or `.git` links as substitutes)
 
 #### **1. Add Group-Repository Mapping**
-**Command**: `/add_group_repo` or `/add_repo`  
+**Command**: `/add_group_repo`, `/repo.add`, or `/add_repo`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: Add a new mapping between a group and a repository.
 
 - **Group Message**:
-  - **Format**: `/add_group_repo <repository_name>`
-  - **Example**: `/add_group_repo <user>/<repo>`
+  - **Format**: `/add_group_repo <repository_name>` or `/repo.add <repository_name>`
+  - **Example**: `/add_group_repo <user>/<repo>` or `/repo.add <user>/<repo>`
 - **Private Message**:
-  - **Format**: `/add_group_repo <repository_name> <group_id>`
-  - **Example**: `/add_group_repo <user>/<repo> 123456`
+  - **Format**: `/add_group_repo <repository_name> <group_id>` or `/repo.add <repository_name> <group_id>`
+  - **Example**: `/add_group_repo <user>/<repo> 123456` or `/repo.add <user>/<repo> 123456`
 
 ---
 
 #### **2. Delete Group-Repository Mapping**
-**Command**: `/del_group_repo` or `/del_repo`  
+**Command**: `/del_group_repo`, `/repo.del`, or `/del_repo`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: Delete a mapping between a group and a repository.
 
 - **Group Message**:
-  - **Format**: `/del_group_repo <repository_name>`
-  - **Example**: `/del_group_repo <user>/<repo>`
+  - **Format**: `/del_group_repo <repository_name>` or `/repo.del <repository_name>`
+  - **Example**: `/del_group_repo <user>/<repo>` or `/repo.del <user>/<repo>`
 - **Private Message**:
-  - **Format**: `/del_group_repo <repository_name> <group_id>`
-  - **Example**: `/del_group_repo <user>/<repo> 123456`
+  - **Format**: `/del_group_repo <repository_name> <group_id>` or `/repo.del <repository_name> <group_id>`
+  - **Example**: `/del_group_repo <user>/<repo> 123456` or `/repo.del <user>/<repo> 123456`
 
 ---
 
 #### **3. Modify Repository Configuration**
-**Command**: `/change_repo_config` or `/repo_cfg`  
+**Command**: `/change_repo_config`, `/repo.cfg`, or `/repo_cfg`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: Modify the configuration of a group-repository mapping.
 
 - **Group Message**:
-  - **Format**: `/change_repo_config <repository_name> <config_item> <value>`
-  - **Example**: `/change_repo_config <user>/<repo> issue False`
+  - **Format**: `/change_repo_config <repository_name> <config_item> <value>` or `/repo.cfg <repository_name> <config_item> <value>`
+  - **Example**: `/change_repo_config <user>/<repo> issue False` or `/repo.cfg <user>/<repo> issue False`
 - **Private Message**:
-  - **Format**: `/change_repo_config <repository_name> <group_id> <config_item> <value>`
-  - **Example**: `/change_repo_config <user>/<repo> 123456 issue False`
+  - **Format**: `/change_repo_config <repository_name> <group_id> <config_item> <value>` or `/repo.cfg <repository_name> <group_id> <config_item> <value>`
+  - **Example**: `/change_repo_config <user>/<repo> 123456 issue False` or `/repo.cfg <user>/<repo> 123456 issue False`
 - **Supported Configuration Items**:
   - `commit` (commit notifications)
   - `issue` (issue notifications)
@@ -158,38 +158,36 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ---
 
 #### **4. View Group-Repository Mapping**
-**Command**: `/show_group_repo` or `/group_repo`  
+**Command**: `/show_group_repo`, `/repo.show`, or `/group_repo`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: View the repository mappings and their configurations for the current group or all groups.
 
 - **Group Message**:
-  - **Format**: `/show_group_repo`
-  - **Example**: `/show_group_repo`
+  - **Format**: `/show_group_repo` or `/repo.show`
+  - **Example**: `/show_group_repo` or `/repo.show`
 - **Private Message**:
-  - **Format**: `/show_group_repo`
-  - **Example**: `/show_group_repo`
+  - **Format**: `/show_group_repo` or `/repo.show`
+  - **Example**: `/show_group_repo` or `/repo.show`
 
 ---
 
 #### **5. Refresh GitHub Status**
-**Command**: `/refresh_github_stat`  
+**Command**: `/refresh_github_stat` or `/repo.refresh`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: Manually refresh the status of GitHub repositories.
 
-- **Format**: `/refresh_github_stat`
-- **Example**: `/refresh_github_stat`
+- **Format**: `/refresh_github_stat` or `/repo.refresh`
+- **Example**: `/refresh_github_stat` or `/repo.refresh`
 
 ---
 
 #### **6. Reload Database**
-**Command**: `/reload_database` or `/reload_db`  
+**Command**: `/reload_database`, `/repo.reload`, or `/reload_db`  
 **Permission**: SUPERUSERS or group chat administrators/owners  
 **Description**: Reload the group and repository mappings from the database.
 
-- **Format**: `/reload_database`
-- **Example**: `/reload_database`
-
----
+- **Format**: `/reload_database` or `/repo.reload`
+- **Example**: `/reload_database` or `/repo.reload`
 
 ### Examples
 1. Add a repository mapping:

@@ -77,10 +77,10 @@ GITHUB_TOKEN=""
 # 格式: {group_id: [{repo: str (, commit: bool)(, issue: bool)(, pull_req: bool)(, release: bool)}]}
 GITHUB_NOTIFY_GROUP={}
 
-# 验证 GitHub Token 的最大重试次数
+# 刷新最大重试次数
 GITHUB_RETRIES=3
 
-# 每次验证重试之间的延迟（以秒为单位）
+# 每次刷新重试之间的延迟（以秒为单位）
 GITHUB_RETRY_DELAY=5
 
 # 删除群组仓库(用于删除数据库配置)
@@ -93,13 +93,19 @@ GITHUB_DISABLE_WHEN_FAIL=False
 # bot发送模版
 # 格式: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
 # 可用参数：
-# commit: repo, message, author, url
-# issue: repo, title, author, url
-# pull_req: repo, title, author, url
-# release: repo, name, version, details, url
+# commit: repo, message, author, url, time
+# issue: repo, title, author, url, time
+# pull_req: repo, title, author, url, time
+# release: repo, name, version, details, url, time
 # 用法: '{<parameter>}' (使用python format功能实现)
 # 未设定时使用默认模版
-GITHUB_SENDING_TEMPLATES={}
+github_sending_templates='
+{
+    "commit": "📜 {repo}有新提交\n\n提交信息: {message}\n提交人: {author}\n提交时间: {time}\nURL: {url}",
+    "issue": "🐛 **{repo}有新issue**\n\nissue标题: {title}\n作者: {author}\nissue发布时间: {time}\nURL: {url}",
+    "pull_req": "🔀 **{repo}有新PR**\n\nPR标题: {title}\n作者: {author}\nPr发布时间: {time}\nURL: {url}",
+    "release": "🚀 **{repo}有新版本**\n\n**版本名称:** {name}\n版本: {version}\n详细信息:\n {details}\n发布时间: {time}\nURL: {url}"
+}'
 
 # repo添加入群聊时的默认设置
 GITHUB_DEFAULT_CONFIG_SETTING=True
@@ -113,39 +119,39 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 **说明**: 添加一个新的群组到仓库的映射。
 
 - **群组消息**:
-  - **格式**: `/add_group_repo <仓库名>`
-  - **示例**: `/add_group_repo <user>/<repo>`
+  - **格式**: `/add_group_repo <仓库名>` 或 `/repo.add <仓库名>`
+  - **示例**: `/add_group_repo <user>/<repo>` 或 `/repo.add <user>/<repo>`
 - **私聊消息**:
-  - **格式**: `/add_group_repo <仓库名> <群组ID>`
-  - **示例**: `/add_group_repo <user>/<repo> 123456`
+  - **格式**: `/add_group_repo <仓库名> <群组ID>` 或 `/repo.add <仓库名> <群组ID>`
+  - **示例**: `/add_group_repo <user>/<repo> 123456` 或 `/repo.add <user>/<repo> 123456`
 
 ---
 
 #### **2. 删除群组仓库映射**
-**命令**: `/del_group_repo` 或 `/del_repo`  
+**命令**: `/del_group_repo` `/repo.del` 或 `/del_repo`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 删除一个群组到仓库的映射。
 
 - **群组消息**:
-  - **格式**: `/del_group_repo <仓库名>`
-  - **示例**: `/del_group_repo <user>/<repo>`
+  - **格式**: `/del_group_repo <仓库名>` 或 `/repo.del <仓库名>`
+  - **示例**: `/del_group_repo <user>/<repo>` 或 `/repo.del <user>/<repo>`
 - **私聊消息**:
-  - **格式**: `/del_group_repo <仓库名> <群组ID>`
-  - **示例**: `/del_group_repo <user>/<repo> 123456`
+  - **格式**: `/del_group_repo <仓库名> <群组ID>` 或 `/repo.del <仓库名> <群组ID>`
+  - **示例**: `/del_group_repo <user>/<repo> 123456` 或 `/repo.del <user>/<repo> 123456`
 
 ---
 
 #### **3. 修改仓库配置**
-**命令**: `/change_repo_config` 或 `/repo_cfg`  
+**命令**: `/change_repo_config` `/repo.cfg` 或 `/repo_cfg`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 修改群组仓库的配置项。
 
 - **群组消息**:
-  - **格式**: `/change_repo_config <仓库名> <配置项> <值>`
-  - **示例**: `/change_repo_config <user>/<repo> issue False`
+  - **格式**: `/change_repo_config <仓库名> <配置项> <值>` 或 `/repo.cfg <仓库名> <配置项> <值>`
+  - **示例**: `/change_repo_config <user>/<repo> issue False` 或 `/repo.cfg <user>/<repo> issue False`
 - **私聊消息**:
-  - **格式**: `/change_repo_config <仓库名> <群组ID> <配置项> <值>`
-  - **示例**: `/change_repo_config <user>/<repo> 123456 issue False`
+  - **格式**: `/change_repo_config <仓库名> <群组ID> <配置项> <值>` 或 `/repo.cfg <仓库名> <群组ID> <配置项> <值>`
+  - **示例**: `/change_repo_config <user>/<repo> 123456 issue False` 或 `/repo.cfg <user>/<repo> 123456 issue False`
 - **支持的配置项**:
   - `commit` (提交通知)
   - `issue` (问题通知)
@@ -155,36 +161,36 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 ---
 
 #### **4. 查看群组仓库映射**
-**命令**: `/show_group_repo` 或 `/group_repo`  
+**命令**: `/show_group_repo` `/repo.show` 或 `/group_repo`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 查看当前群组或所有群组的仓库映射及其配置。
 
 - **群组消息**:
-  - **格式**: `/show_group_repo`
-  - **示例**: `/show_group_repo`
+  - **格式**: `/show_group_repo` 或 `/repo.show`
+  - **示例**: `/show_group_repo` 或 `/repo.show`
 - **私聊消息**:
-  - **格式**: `/show_group_repo`
-  - **示例**: `/show_group_repo`
+  - **格式**: `/show_group_repo` 或 `/repo.show`
+  - **示例**: `/show_group_repo` 或 `/repo.show`
 
 ---
 
 #### **5. 刷新 GitHub 状态**
-**命令**: `/refresh_github_stat`  
+**命令**: `/refresh_github_stat` `/repo.refresh`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 手动刷新 GitHub 仓库的状态。
 
-- **格式**: `/refresh_github_stat`
-- **示例**: `/refresh_github_stat`
+- **格式**: `/refresh_github_stat` 或 `/repo.refresh`
+- **示例**: `/refresh_github_stat` 或 `/repo.refresh`
 
 ---
 
 #### **6. 重新加载数据库**
-**命令**: `/reload_database` 或 `/reload_db`  
+**命令**: `/reload_database` `/repo.reload` 或 `/reload_db`  
 **权限**: SUPERUSERS或群聊管理员/群主  
 **说明**: 重新加载数据库中的群组和仓库映射。
 
-- **格式**: `/reload_database`
-- **示例**: `/reload_database`
+- **格式**: `/reload_database` 或 `/repo.reload`
+- **示例**: `/reload_database` 或 `/repo.reload`
 
 ---
 
