@@ -126,14 +126,14 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | None:
                 f"HTTP error while fetching GitHub {endpoint} for {repo} "
                 f"in attempt {retries}: {e}"
             )
-            errs.append(e)
+            errs.append(f'{e.__class__.__name__}: {e}')
         except Exception as e:
             logger.error(
                 f"Unexpected error while fetching GitHub "
                 f"{endpoint} for {repo} in attempt {retries}: "
                 f"{e}"
             )
-            errs.append(e)
+            errs.append(f'{e.__class__.__name__}: {e}\nargs:{e.args}')
         await asyncio.sleep(delay)
         retries += 1
 
@@ -281,7 +281,7 @@ async def check_repo_updates():
                                 html += "".join(
                                     (
                                         "<p style='white-space=pre-wrap'>"
-                                        + x
+                                        + x.replace("\n", "<br>")
                                         + "</p>"
                                     )
                                     for x in data["errors"]
@@ -305,7 +305,7 @@ async def check_repo_updates():
                                     html = '<p>GitHub API Error:</p>'
                                     html += "".join(
                                         "<p style='white-space=pre-wrap'>"
-                                        + x
+                                        + x.replace("\n", "<br>")
                                         + "</p>"
                                         for x in data["errors"]
                                     )
@@ -319,7 +319,7 @@ async def check_repo_updates():
                                     )
                                 except Exception as e:
                                     logger.error(
-                                        "Failed to notify the superuser"
+                                        "Failed to notify the superuser "
                                         "about the error: "
                                         f"{e}"
                                     )

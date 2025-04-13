@@ -179,16 +179,6 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 - **Format**: `/refresh_github_stat` or `/repo.refresh`
 - **Example**: `/refresh_github_stat` or `/repo.refresh`
 
----
-
-#### **6. Reload Database**
-**Command**: `/reload_database`, `/repo.reload`, or `/reload_db`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: Reload the group and repository mappings from the database.
-
-- **Format**: `/reload_database` or `/repo.reload`
-- **Example**: `/reload_database` or `/repo.reload`
-
 ### Examples
 1. Add a repository mapping:
    ```
@@ -209,10 +199,6 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 5. Refresh GitHub status:
    ```
    /refresh_github_stat
-   ```
-6. Reload the database:
-   ```
-   /reload_database
    ```
 
 ### TODOS

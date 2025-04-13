@@ -13,7 +13,7 @@ from .db_action import (
 from .commands import repo_group
 from .config import Config
 
-__version__ = ver = "0.1.7"
+__version__ = ver = "0.1.7.1"
 cmd_group = repo_group
 
 __plugin_meta__ = PluginMetadata(
@@ -48,7 +48,7 @@ group_repo_dict = config.github_notify_group
 init_database()
 del_groups = config.github_del_group_repo
 
-groups_repo = load_groups()
+groups_repo = load_groups(False)
 for group_id, repos in del_groups.items():
     if group_id in groups_repo:
         for repo in repos:
@@ -85,7 +85,7 @@ for group in group_repo_dict:
                     repo.get("release", False),
                 )
 
-group_repo_dict = load_groups()
+group_repo_dict = load_groups(False)
 logger.debug(f"Read from db: {group_repo_dict}")
 
 
@@ -95,7 +95,7 @@ logger.debug(f"Read from db: {group_repo_dict}")
 def refresh_data_from_db():
     """Refresh the group-to-repo mapping from the database."""
     global group_repo_dict
-    group_repo_dict = load_groups()
+    group_repo_dict = load_groups(False)
 
 
 # Asynchronous initialization
@@ -113,4 +113,5 @@ driver.on_startup(plugin_init)
 # Trigger every 5 minutes (:00, :05, :10, ...)
 async def _():
     """Check for all repos and notify groups."""
+    load_groups(False)
     await check_repo_updates()

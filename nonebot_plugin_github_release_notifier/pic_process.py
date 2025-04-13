@@ -8,5 +8,5 @@ async def text_to_pic(text: str):
     return await htmlrender.html_to_pic(
         html=text,
         screenshot_timeout=10000,
-        viewport={'width': 600, 'height': 10}
+        viewport={'width': 300, 'height': 10}
     )

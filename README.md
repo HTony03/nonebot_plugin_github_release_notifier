@@ -184,16 +184,6 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 
 ---
 
-#### **6. 重新加载数据库**
-**命令**: `/reload_database` `/repo.reload` 或 `/reload_db`  
-**权限**: SUPERUSERS或群聊管理员/群主  
-**说明**: 重新加载数据库中的群组和仓库映射。
-
-- **格式**: `/reload_database` 或 `/repo.reload`
-- **示例**: `/reload_database` 或 `/repo.reload`
-
----
-
 ### 示例
 1. 添加仓库映射：
    ```
@@ -214,10 +204,6 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
 5. 刷新 GitHub 状态：
    ```
    /refresh_github_stat
-   ```
-6. 重新加载数据库：
-   ```
-   /reload_database
    ```
 
 ### TODOS

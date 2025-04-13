@@ -307,6 +307,7 @@ async def show_repo(bot: Bot, event: MessageEvent):
 async def refresh_repo(bot: Bot, event: MessageEvent):
     """Refresh repository data."""
     from . import check_repo_updates
+    load_groups(fast=False)
     await bot.send(event, "Refreshing repository data...")
     await check_repo_updates()
     # await bot.send(event, "Repository data refreshed.")

@@ -3,6 +3,7 @@ from nonebot.log import logger
 from .config import DATA_DIR
 
 DB_FILE = DATA_DIR / "github_release_notifier.db"
+group_data = {}
 
 
 # Initialize the database
@@ -82,8 +83,11 @@ def save_last_processed(data: dict):
     conn.close()
 
 
-def load_groups() -> dict:
+def load_groups(fast=True) -> dict:
     """Load the group configurations from the SQLite database."""
+    global group_data
+    if fast:
+        return group_data
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM group_config")
