@@ -143,7 +143,7 @@ issues, prs, releases)
 
 
 def change_group_repo_cfg(group_id: int | str, repo: str,
-                          type: str, value: bool):
+                          config_type: str, value: bool):
     """Change a group's repository configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -160,16 +160,16 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
         "prs": "prs",
         "releases": "releases",
     }
-    if type not in column_mapping:
+    if config_type not in column_mapping:
         logger.error(
-            f"Error: Invalid type format '{type}'. "
+            f"Error: Invalid type format '{config_type}'. "
             f"Must be one of {list(column_mapping.keys())}."
         )
         conn.close()
         return
 
     # Get the correct column name
-    column = column_mapping[type]
+    column = column_mapping[config_type]
 
     # Execute the update query
     logger.info(f"Updating group {group_id}, repo {repo}, "

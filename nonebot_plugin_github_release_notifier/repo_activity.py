@@ -1,10 +1,12 @@
+from datetime import datetime
+import ssl
+import asyncio
+
 import aiohttp
-from nonebot import get_bot, get_driver
+from nonebot import get_bot, get_driver, require
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot
-from datetime import datetime
-import asyncio
-import ssl
+
 from .db_action import (
     load_last_processed,
     save_last_processed,
@@ -12,9 +14,11 @@ from .db_action import (
     change_group_repo_cfg,
 )
 from .config import config
-from nonebot import require
+
+# Ensure required plugins are loaded
 require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import html_to_pic
+
 superusers = get_driver().config.superusers
 
 # Load GitHub token from environment variables
@@ -42,7 +46,7 @@ default_sending_templates = {
 config_template = config.github_sending_templates
 
 
-async def validate_github_token(retries=3, delay=5) -> bool:
+async def validate_github_token(retries=3, retry_delay=5) -> bool:
     """
     Validate the GitHub token by making a test request,
     with retries on SSL errors.
@@ -55,7 +59,7 @@ async def validate_github_token(retries=3, delay=5) -> bool:
         return False
 
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    for attempt in range(retries):
+    for _ in range(retries):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -75,9 +79,9 @@ async def validate_github_token(retries=3, delay=5) -> bool:
         except ssl.SSLError as e:
             logger.error(
                 f"SSL error during GitHub token validation: {e}. "
-                f"Retrying in {delay} seconds..."
+                f"Retrying in {retry_delay} seconds..."
             )
-            await asyncio.sleep(delay)
+            await asyncio.sleep(retry_delay)
         except Exception as e:
             logger.error(f"Error validating GitHub token: {e}")
 

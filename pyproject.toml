@@ -30,3 +30,5 @@ dependencies = [
 [project.urls]
 homepage = "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
 repository = "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
+changelog = "https://github.com/HTony03/nonebot_plugin_github_release_notifier/releases"
+issue = "https://github.com/HTony03/nonebot_plugin_github_release_notifier/issues"

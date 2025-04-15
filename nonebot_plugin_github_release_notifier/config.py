@@ -69,7 +69,7 @@ class Config(BaseModel):
 
 try:
     config = get_plugin_config(Config)
-except Exception as e:
+except (ValueError, TypeError) as e:
     logger.error(f"nonebot_plugin_github_release_notifier 配置读取失败: {e}")
     config = Config()
 # logger.info('got configs: ' + str(config))
