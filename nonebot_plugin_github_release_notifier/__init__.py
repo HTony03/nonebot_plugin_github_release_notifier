@@ -12,7 +12,6 @@ from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 from .repo_activity import check_repo_updates, validate_github_token
 from .config import config
-# from .group_commands import add_group_repo_data, remove_group_repo_data
 from .db_action import (
     init_database,
     load_groups,
@@ -46,7 +45,6 @@ logger.info(
     f"Initializing nonebot_plugin_github_release_notifier version: {__version__}"
 )
 
-# TODO: use pic to show the usage
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler

@@ -1,4 +1,6 @@
-import aiohttp
+from datetime import datetime  # Standard library imports
+import aiohttp  # Third-party imports
+
 from nonebot import CommandGroup, on_command
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.log import logger
@@ -11,6 +13,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
+
 from .config import config
 from .db_action import (
     add_group_repo_data,
@@ -22,10 +25,8 @@ from .permission import permission_check
 from .pic_process import text_to_pic
 
 
-GITHUB_TOKEN = config.github_token
 
-
-# Command to check remaining GitHub API usage
+# pylint: disable=invalid-name
 check_api_usage = on_command(
     "check_api_usage", aliases={"api_usage", "github_usage"}, priority=5
 )
@@ -35,6 +36,7 @@ check_api_usage = on_command(
 async def handle_check_api_usage(bot: Bot, event: MessageEvent):
     """Fetch and send the remaining GitHub API usage limits."""
     headers = {}
+    from .repo_activity import GITHUB_TOKEN
     if GITHUB_TOKEN:
         headers["Authorization"] = f"token {GITHUB_TOKEN}"
 
@@ -54,8 +56,6 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent):
 
                 # Format the reset time if available
                 if reset_time != "Unknown":
-                    from datetime import datetime
-
                     reset_time = datetime.fromtimestamp(reset_time).strftime(
                         "%Y-%m-%d %H:%M:%S"
                     )
@@ -263,14 +263,14 @@ async def show_repo(bot: Bot, event: MessageEvent):
         repos = groups_repo[group_id]
         output = ""
         for repo in repos:
-            repo_info = f"- {repo['repo']}:\n"
-            repo_info += "".join([
+            current_repo_info = f"- {repo['repo']}:\n"
+            current_repo_info += "".join([
                 f"{types}:{str(repo.get(types, 'False'))}\n"
                 .replace('0', 'False').replace('1', 'True')
                 for types in ['commit', 'issue', 'pull_req', 'release']
             ])
-            repo_info += "\n"
-            output += repo_info
+            current_repo_info += "\n"
+            output += current_repo_info
         message = f"Group {group_id} Repositories:\n" + output
     elif isinstance(event, PrivateMessageEvent):
         groups = groups_repo.keys()
@@ -313,7 +313,6 @@ async def refresh_repo(bot: Bot, event: MessageEvent):
     # await bot.send(event, "Repository data refreshed.")
 
 
-# TODO: repo.info command
 @on_command(
     'repo_info',
     aliases={'repo.info'}
@@ -327,6 +326,7 @@ async def repo_info(
         await bot.send(event, "Usage: repo info <repo>")
         return
 
+    from .repo_activity import GITHUB_TOKEN
     repo = link_to_repo_name(command_args[0])
 
     headers = {}

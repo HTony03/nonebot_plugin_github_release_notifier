@@ -1,6 +1,7 @@
 from nonebot import require
 
 require("nonebot_plugin_htmlrender")
+# pylint: disable=wrong-import-position 
 import nonebot_plugin_htmlrender as htmlrender
 
 

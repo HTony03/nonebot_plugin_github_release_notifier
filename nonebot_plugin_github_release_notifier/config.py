@@ -1,8 +1,10 @@
 from nonebot import get_plugin_config
 from nonebot import logger, require
+# pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
 require("nonebot_plugin_localstore")
+# pylint: disable=wrong-import-position
 import nonebot_plugin_localstore as store  # noqa: E402
 
 DATA_DIR = store.get_plugin_data_dir()

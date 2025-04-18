@@ -17,6 +17,7 @@ from .config import config
 
 # Ensure required plugins are loaded
 require("nonebot_plugin_htmlrender")
+# pylint: disable=wrong-import-position 
 from nonebot_plugin_htmlrender import html_to_pic
 
 superusers = get_driver().config.superusers
@@ -68,14 +69,14 @@ async def validate_github_token(retries=3, retry_delay=5) -> bool:
                     if response.status == 200:
                         logger.info("GitHub token is valid.")
                         return True
-                    else:
-                        logger.error(
-                                    f"GitHub token validation failed: "
-                                    f"{response.status} - "
-                                    f"{await response.text()}"
-                                    )
-                        GITHUB_TOKEN = None
-                        return False
+                    
+                    logger.error(
+                                f"GitHub token validation failed: "
+                                f"{response.status} - "
+                                f"{await response.text()}"
+                                )
+                    GITHUB_TOKEN = None
+                    return False
         except ssl.SSLError as e:
             logger.error(
                 f"SSL error during GitHub token validation: {e}. "
@@ -281,23 +282,33 @@ async def check_repo_updates():
                         logger.error(data["falt"])
                         if config.github_send_faliure_group:
                             try:
-                                html = '<p>GitHub API Error:</p>'
-                                html += "".join(
-                                    (
-                                        "<p style='white-space=pre-wrap'>"
-                                        + x.replace("\n", "<br>")
-                                        + "</p>"
+                                if any('403' in x for x in data["errors"]):
+                                    await bot.send_group_msg(
+                                        group_id=group_id,
+                                        message=(
+                                            MessageSegment.text(
+                                                data['falt'] + "\nGitHub API rate limit exceeded.\n Probably caused by invalid / no token."
+                                            )
+                                        )
                                     )
-                                    for x in data["errors"]
-                                )
-                                pic = await html_to_pic(html)
-                                await bot.send_group_msg(
-                                    group_id=group_id,
-                                    message=(
-                                        MessageSegment.text(data["falt"])
-                                        + MessageSegment.image(pic)
+                                else:
+                                    html = '<p>GitHub API Error:</p>'
+                                    html += "".join(
+                                        (
+                                            "<p style='white-space=pre-wrap'>"
+                                            + x.replace("\n", "<br>")
+                                            + "</p>"
+                                        )
+                                        for x in data["errors"]
                                     )
-                                )
+                                    pic = await html_to_pic(html)
+                                    await bot.send_group_msg(
+                                        group_id=group_id,
+                                        message=(
+                                            MessageSegment.text(data["falt"])
+                                            + MessageSegment.image(pic)
+                                        )
+                                    )
                             except Exception as e:
                                 logger.error(
                                         f"Failed to notify group {group_id} "
@@ -306,21 +317,31 @@ async def check_repo_updates():
                         if config.github_send_faliure_superuser:
                             for users in superusers:
                                 try:
-                                    html = '<p>GitHub API Error:</p>'
-                                    html += "".join(
-                                        "<p style='white-space=pre-wrap'>"
-                                        + x.replace("\n", "<br>")
-                                        + "</p>"
-                                        for x in data["errors"]
-                                    )
-                                    pic = await html_to_pic(html)
-                                    await bot.send_private_msg(
-                                        user_id=users,
-                                        message=(
-                                            MessageSegment.text(data["falt"])
-                                            + MessageSegment.image(pic)
+                                    if any('403' in x for x in data["errors"]):
+                                        await bot.send_private_msg(
+                                            user_id=users,
+                                            message=(
+                                                MessageSegment.text(
+                                                    data['falt'] + "\nGitHub API rate limit exceeded.\n Probably caused by invalid / no token."
+                                                )
+                                            )
                                         )
-                                    )
+                                    else:
+                                        html = '<p>GitHub API Error:</p>'
+                                        html += "".join(
+                                            "<p style='white-space=pre-wrap'>"
+                                            + x.replace("\n", "<br>")
+                                            + "</p>"
+                                            for x in data["errors"]
+                                        )
+                                        pic = await html_to_pic(html)
+                                        await bot.send_private_msg(
+                                            user_id=users,
+                                            message=(
+                                                MessageSegment.text(data["falt"])
+                                                + MessageSegment.image(pic)
+                                            )
+                                        )
                                 except Exception as e:
                                     logger.error(
                                         "Failed to notify the superuser "
@@ -330,6 +351,7 @@ async def check_repo_updates():
                         if (
                             config.github_disable_when_fail
                             and "SSL" not in data["falt"]
+                            and "403" not in data["falt"]
                         ):
                             repo_config[data_type] = False
                             change_group_repo_cfg(
