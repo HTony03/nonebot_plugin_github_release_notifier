@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_github_release_notifier"
-version = "0.1.8"
+version = "0.1.8.1"
 description = "A plugin for nonebot & onebot to notify group members of new commits, issues, and PRs in GitHub repos."
 authors = [
   { name = "HTony03", email = "HTony03@foxmail.com" },
