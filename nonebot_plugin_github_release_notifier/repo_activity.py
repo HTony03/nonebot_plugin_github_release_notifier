@@ -17,8 +17,8 @@ from .config import config
 
 # Ensure required plugins are loaded
 require("nonebot_plugin_htmlrender")
-# pylint: disable=wrong-import-position 
-from nonebot_plugin_htmlrender import html_to_pic
+# pylint: disable=wrong-import-position
+from nonebot_plugin_htmlrender import html_to_pic, md_to_pic
 
 superusers = get_driver().config.superusers
 
@@ -69,7 +69,6 @@ async def validate_github_token(retries=3, retry_delay=5) -> bool:
                     if response.status == 200:
                         logger.info("GitHub token is valid.")
                         return True
-                    
                     logger.error(
                                 f"GitHub token validation failed: "
                                 f"{response.status} - "
@@ -178,8 +177,16 @@ async def notify(
                 if 'issue' == data_type and 'pull' in message:
                     pass
                 else:
+                    if data_type == 'release':
+                        msg = message.split(item.get("body", "No description provided."))
+                        message = MessageSegment.text(msg[0]) + \
+                            MessageSegment.image(await md_to_pic(
+                                item.get("body", "No description provided."))) + \
+                            MessageSegment.text(msg[1])
+                    else:
+                        message = MessageSegment.text(message)
                     await bot.send_group_msg(
-                        group_id=group_id, message=MessageSegment.text(message)
+                        group_id=group_id, message=message
                     )
             except Exception as e:
                 logger.error(
