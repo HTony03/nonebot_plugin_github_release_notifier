@@ -21,7 +21,7 @@ from .db_action import (
 from .commands import repo_group
 from .config import Config
 
-__version__ = "0.1.7.1"
+__version__ = "0.1.8"
 cmd_group = repo_group
 
 __plugin_meta__ = PluginMetadata(

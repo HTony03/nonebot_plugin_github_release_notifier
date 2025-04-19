@@ -138,6 +138,11 @@ github_sending_templates='
 本插件按照MIT协议传播
 
 ## Releases
+
+`v0.1.8` 已知问题修复，readme更新
+
+`v0.1.3`-`v0.1.7` bug修复，发布至nonebot
+
 `V0.1.2` 修改发布信息
 
 `V0.1.0`-`V0.1.1` 主程序完成，功能适配， 准备发布
