@@ -182,7 +182,7 @@ async def notify(
                         message = MessageSegment.text(msg[0]) + \
                             MessageSegment.image(await md_to_pic(
                                 item.get("body", "No description provided."))) + \
-                            MessageSegment.text(msg[1])
+                            (MessageSegment.text(msg[1]) if msg[1] else MessageSegment.text(''))
                     else:
                         message = MessageSegment.text(message)
                     await bot.send_group_msg(

@@ -132,8 +132,9 @@ github_sending_templates='
 - [x] 自定义发送信息格式
 - [ ] 添加help
 - [ ] 数据库结构重置
-- [ ] markdown 支持
-- [ ] markdown转图片展示
+- [ ] markdown 信息支持
+- [ ] markdown 转图片展示
+- [ ] issue/pr 详细信息支持
 
 
 ## LICENCE
