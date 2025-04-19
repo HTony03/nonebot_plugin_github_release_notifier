@@ -165,7 +165,7 @@ async def notify(
         elif "published_at" in item:
             times = item["published_at"].replace("Z", "+00:00")
         else:
-            times = item["commit"]["committer"]["date"].replace("Z", "+00:00")
+            times = item["commit"]["author"]["date"].replace("Z", "+00:00")
         item_time = datetime.fromisoformat(times)
         last_time = load_last_processed().get(repo, {}).get(data_type)
         if (
@@ -192,7 +192,7 @@ async def notify(
     elif "published_at" in latest_data[0]:
         times = latest_data[0]["published_at"].replace("Z", "+00:00")
     else:
-        times = latest_data[0]["commit"]["committer"]["date"]
+        times = latest_data[0]["commit"]["author"]["date"]
         times = times.replace("Z", "+00:00")
 
     # Update the last processed time
@@ -205,9 +205,9 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
         datas = {
             "repo": repo,
             "message": item["commit"]["message"],
-            "author": item["commit"]["committer"]["name"],
+            "author": item["commit"]["author"]["name"],
             "url": item["html_url"],
-            "time": item["commit"]["committer"]["date"],
+            "time": item["commit"]["author"]["date"],
         }
     elif data_type == "issue":
         datas = {
