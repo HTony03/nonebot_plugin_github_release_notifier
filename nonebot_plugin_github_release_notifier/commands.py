@@ -364,8 +364,7 @@ async def repo_info(
                 is_fork = data.get("fork", False)
                 is_archived = data.get("archived", False)
 
-                message = f'''
-**Repository Information**
+                message = f'''**Repository Information**
 - Name: {repo_name}
 - Description: {description}
 - Owner: {owner}
@@ -383,15 +382,15 @@ Issue count: {issue_count}
 Repo statics & status
 Created time: {created}
 Last updated: {updated}''' + \
-                    'The repo is a template\n' if is_template else '' + \
-                    'The repo is private repo\n' if is_private else '' + \
-                    '' if allow_fork else 'The repo does not allow forks\n' + \
-                    'The repo is a fork\n' if is_fork else '' + \
-                    'The repo is archived\n' if is_archived else ''
+                    ('The repo is a template\n' if is_template else '') + \
+                    ('The repo is private repo\n' if is_private else '') + \
+                    ('' if allow_fork else 'The repo does not allow forks\n') + \
+                    ('The repo is a fork\n' if is_fork else '') + \
+                    ('The repo is archived\n' if is_archived else '')
 
-        re_text = message.replace('\n', '<br />')
-        message = MessageSegment.image(
-                await text_to_pic(f'<p>{re_text}</p>'))
+                re_text = message.replace('\n', '<br />')
+                message = MessageSegment.image(
+                        await text_to_pic(f'<p>{re_text}</p>'))
     except aiohttp.ClientResponseError as e:
         message = (
             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"

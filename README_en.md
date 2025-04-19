@@ -1,98 +1,79 @@
-# Nonebot_plugin_github_release_notifier
 
-A plugin for monitoring GitHub repository releases and sending notifications.
+<div align="center">
+  <a href="https://v2.nonebot.dev/store"><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo"></a>
+  <br>
+  <p><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText"></p>
+</div>
 
-## Features
-- Monitor multiple GitHub repositories.
-- Notify users of new releases through qq bots.
-- Customizable notification formats.
+<div align="center">
 
-## Write at the beginning
-This plugin uses aiohttp to obtain GitHub API data, but it is currently unable to stably connect to GitHub API in China
+# nonebot-plugin-github-release-notifier
 
-If there are connection issues, please try using a proxy or other tool
+_✨ NoneBot GitHub Release Notifier ✨_
 
-## Installation
+<a href="./LICENSE">
+    <img src="https://img.shields.io/github/license/HTony03/nonebot_plugin_github_release_notifier.svg" alt="license">
+</a>
+<a href="https://pypi.python.org/pypi/nonebot-plugin-github-release-notifier">
+    <img src="https://img.shields.io/pypi/v/nonebot-plugin-github-release-notifier.svg" alt="pypi">
+</a>
+<img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
 
-### Install via nb-cli
-```nb-cli install nonebot-plugin-github-release-notifier```
+</div>
 
-### Install via pip
-```pip install nonebot-plugin-github-release-notifier```
+This is a plugin for monitoring GitHub repository releases and sending notifications.
 
-### Clone Repository Installation
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/HTony03/nonebot_plugin_github_release_notifier.git
-    ```
-2. Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3. Place the plugin in your `plugins` folder.
+## 📖 Introduction
 
-## Usage
-#### using by `pyproject.toml`
-add thr following contents to your `pyproject.toml` file
-```toml
-[tool.nonebot]
-plugins = ["nonebot_plugin_github_release_notifier"]
-```
-#### using by editing `bot.py`
-```python title="bot.py"
-import nonebot
-from nonebot.adapters.onebot.v11 import Adapter
+This plugin can monitor multiple GitHub repositories, notify users of new updates via QQ Bot, and supports customizable notification formats.
 
-nonebot.init(_env_file=".env")
+## 💿 Installation
 
-driver = nonebot.get_driver()
-driver.register_adapter(Adapter)
+<details open>
+<summary>Install via nb-cli</summary>
+Open the command line in the root directory of your NoneBot2 project and enter the following command to install:
 
-nonebot.load_builtin_plugins()
+    nb plugin install nonebot-plugin-github-release-notifier
 
-# load other plugins
+</details>
 
+<details>
+<summary>Install via package manager</summary>
+Open the command line in the plugin directory of your NoneBot2 project and enter the corresponding installation command based on your package manager:
 
-nonebot.load_plugin("nonebot_plugin_apscheduler")
-nonebot.load_plugin("nonebot_plugin_github_release_notifier")
+<details>
+<summary>pip</summary>
 
-nonebot.run()
-```
+    pip install nonebot-plugin-github-release-notifier
+</details>
 
-### Configuration
-The relevant `.env` configuration items are as follows:
+Open the `pyproject.toml` file in the root directory of your NoneBot2 project and add the following to the `[tool.nonebot]` section:
 
-All configuration items are optional. Groups can add configurations via commands.
+    plugins = ["nonebot-plugin-github-release-notifier"]
+
+</details>
+
+## ⚙️ Configuration
 
 Before use, ensure that the `SUPERUSERS` configuration item in NoneBot is properly set.
 
+Add the following optional configuration items to the `.env` file in your NoneBot2 project:
+
+| Configuration Item | Required | Default Value | Description |
+|:------------------:|:--------:|:-------------:|:-----------:|
+| GITHUB_TOKEN | No | Empty string | Token for accessing the GitHub API |
+| GITHUB_RETRIES | No | 3 | Maximum retry attempts for refreshing |
+| GITHUB_RETRY_DELAY | No | 5 | Delay between each refresh retry (in seconds) |
+| GITHUB_NOTIFY_GROUP | No | Empty dictionary | Mapping of groups to repositories |
+| GITHUB_DEL_GROUP_REPO | No | Empty dictionary | Delete group-repository mappings |
+| GITHUB_DISABLE_WHEN_FAIL | No | False | Disable configuration when repository data retrieval fails |
+| GITHUB_SENDING_TEMPLATES | No | Default template | Customizable notification formats (see below) |
+
+### Customizable Notification Formats
+
+The `GITHUB_SENDING_TEMPLATES` configuration item allows users to customize the notification formats for GitHub events. The format is as follows:
+
 ```dotenv
-# Wheter to send the failure message when failed
-GITHUB_SEND_FAILURE_GROUP=True
-GITHUB_SEND_FALIURE_SUPERUSER=False
-
-# GitHub Token for accessing the GitHub API
-# Accepts any token, whether classic token or fine-grained access token
-GITHUB_TOKEN=""
-
-# Mapping of groups to repositories (automatically added to the database, with the database as the primary data source)
-# Format: {group_id: [{repo: str (, commit: bool)(, issue: bool)(, pull_req: bool)(, release: bool)}]}
-GITHUB_NOTIFY_GROUP={}
-
-# Maximum retry attempts for refreshing
-GITHUB_RETRIES=3
-
-# Delay between each refresh retry (in seconds)
-GITHUB_RETRY_DELAY=5
-
-# Delete group-repository mappings (used to remove database configurations)
-# Format: {group_id: ['repo']}
-GITHUB_DEL_GROUP_REPO={}
-
-# Disable configuration when repository data retrieval fails
-GITHUB_DISABLE_WHEN_FAIL=True
-
-# Bot sending templates
 # Format: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
 # Available parameters:
 # commit: repo, message, author, url, time
@@ -101,85 +82,25 @@ GITHUB_DISABLE_WHEN_FAIL=True
 # release: repo, name, version, details, url, time
 # Usage: '{<parameter>}' (implemented using Python's format functionality)
 # Defaults to the standard template if not set
-GITHUB_SENDING_TEMPLATES={}
-
-# Default settings when adding a repository to a group chat
-GITHUB_DEFAULT_CONFIG_SETTING=True
+github_sending_templates={}
 ```
 
-### Commands
-(Repository names in this section can use repository links or `.git` links as substitutes)
+## 🎉 Usage
 
-#### **1. Add Group-Repository Mapping**
-**Command**: `/add_group_repo`, `/repo.add`, or `/add_repo`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: Add a new mapping between a group and a repository.
+### Command Table
 
-- **Group Message**:
-  - **Format**: `/add_group_repo <repository_name>` or `/repo.add <repository_name>`
-  - **Example**: `/add_group_repo <user>/<repo>` or `/repo.add <user>/<repo>`
-- **Private Message**:
-  - **Format**: `/add_group_repo <repository_name> <group_id>` or `/repo.add <repository_name> <group_id>`
-  - **Example**: `/add_group_repo <user>/<repo> 123456` or `/repo.add <user>/<repo> 123456`
-
----
-
-#### **2. Delete Group-Repository Mapping**
-**Command**: `/del_group_repo`, `/repo.del`, or `/del_repo`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: Delete a mapping between a group and a repository.
-
-- **Group Message**:
-  - **Format**: `/del_group_repo <repository_name>` or `/repo.del <repository_name>`
-  - **Example**: `/del_group_repo <user>/<repo>` or `/repo.del <user>/<repo>`
-- **Private Message**:
-  - **Format**: `/del_group_repo <repository_name> <group_id>` or `/repo.del <repository_name> <group_id>`
-  - **Example**: `/del_group_repo <user>/<repo> 123456` or `/repo.del <user>/<repo> 123456`
-
----
-
-#### **3. Modify Repository Configuration**
-**Command**: `/change_repo_config`, `/repo.cfg`, or `/repo_cfg`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: Modify the configuration of a group-repository mapping.
-
-- **Group Message**:
-  - **Format**: `/change_repo_config <repository_name> <config_item> <value>` or `/repo.cfg <repository_name> <config_item> <value>`
-  - **Example**: `/change_repo_config <user>/<repo> issue False` or `/repo.cfg <user>/<repo> issue False`
-- **Private Message**:
-  - **Format**: `/change_repo_config <repository_name> <group_id> <config_item> <value>` or `/repo.cfg <repository_name> <group_id> <config_item> <value>`
-  - **Example**: `/change_repo_config <user>/<repo> 123456 issue False` or `/repo.cfg <user>/<repo> 123456 issue False`
-- **Supported Configuration Items**:
-  - `commit` (commit notifications)
-  - `issue` (issue notifications)
-  - `pull_req` (pull request notifications)
-  - `release` (release notifications)
-
----
-
-#### **4. View Group-Repository Mapping**
-**Command**: `/show_group_repo`, `/repo.show`, or `/group_repo`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: View the repository mappings and their configurations for the current group or all groups.
-
-- **Group Message**:
-  - **Format**: `/show_group_repo` or `/repo.show`
-  - **Example**: `/show_group_repo` or `/repo.show`
-- **Private Message**:
-  - **Format**: `/show_group_repo` or `/repo.show`
-  - **Example**: `/show_group_repo` or `/repo.show`
-
----
-
-#### **5. Refresh GitHub Status**
-**Command**: `/refresh_github_stat` or `/repo.refresh`  
-**Permission**: SUPERUSERS or group chat administrators/owners  
-**Description**: Manually refresh the status of GitHub repositories.
-
-- **Format**: `/refresh_github_stat` or `/repo.refresh`
-- **Example**: `/refresh_github_stat` or `/repo.refresh`
+| Command | Permission | Requires @ | Scope | Description |
+|:-------:|:----------:|:----------:|:-----:|:-----------:|
+| /add_group_repo or /repo.add | SUPERUSERS or Admins | No | Private & Group | Add group-repository mapping |
+| /del_group_repo or /repo.delete | SUPERUSERS or Admins | No | Private & Group | Delete group-repository mapping |
+| /change_repo_config or /repo.config | SUPERUSERS or Admins | No | Private & Group | Modify repository configuration |
+| /show_group_repo or /repo.show | SUPERUSERS or Admins | No | Private & Group | View group-repository mapping |
+| /refresh_group_repo or /repo.refresh | SUPERUSERS or Admins | No | Private & Group | Refresh GitHub status |
+| /repo_info or /repo.info | SUPERUSERS or Admins | No | Private & Group | View repository details |
+| /check_api_usage | Everyone | No | Private & Group | View GitHub API usage |
 
 ### Examples
+
 1. Add a repository mapping:
    ```
    /add_group_repo <user>/<repo>
@@ -198,19 +119,27 @@ GITHUB_DEFAULT_CONFIG_SETTING=True
    ```
 5. Refresh GitHub status:
    ```
-   /refresh_github_stat
+   /refresh_group_repo
+   ```
+6. View repository details:
+   ```
+   /repo.info <user>/<repo>
+   ```
+7. View GitHub API usage:
+   ```
+   /check_api_usage
    ```
 
 ### TODOS
 
-- [x] Customizable message formats
-- [ ] add help
+- [x] Customizable notification formats
+- [ ] Add help documentation
 - [ ] Reset database structure
 
 ## LICENSE
 This plugin is distributed under the MIT License.
 
-## Release
-`V0.1.2` prepare for upload and release
+## Releases
+`V0.1.2` Updated release information
 
-`V0.1.0` finish main program and funca
+`V0.1.0`-`V0.1.1` Completed main program and functionality, prepared for release
