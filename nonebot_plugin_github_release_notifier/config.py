@@ -8,6 +8,7 @@ require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store  # noqa: E402
 
 DATA_DIR = store.get_plugin_data_dir()
+cache_dir = store.get_plugin_cache_dir()
 
 logger.info(f"nonebot_plugin_github_release_notifier 数据文件夹 ->  {DATA_DIR}")
 
@@ -66,6 +67,19 @@ class Config(BaseModel):
     github_default_config_setting: bool = True
     """
     Default settings for all repositories when adding a repository to groups.
+    """
+    
+    github_send_in_markdown: bool = False
+    """
+    Send messages in Markdown pics.
+    """
+    github_send_detail_in_markdown: bool = True
+    """
+    Send detailed messages in Markdown pics.
+    influenced types:
+    - pr
+    - issue
+    - release
     """
 
 
