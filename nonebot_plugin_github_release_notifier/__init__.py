@@ -59,6 +59,7 @@ init_database()
 
 group_repo_dict = load_group_configs(False)
 logger.debug(f"Read from db: {group_repo_dict}")
+data_set.set("group_repo_dict", group_repo_dict)
 
 
 # TODO: Reformat database
@@ -66,8 +67,8 @@ logger.debug(f"Read from db: {group_repo_dict}")
 
 def refresh_data_from_db() -> None:
     """Refresh the group-to-repo mapping from the database."""
-    global group_repo_dict
-    group_repo_dict = load_groups(False)
+    group_repo_dict = load_group_configs(False)
+    data_set.set("group_repo_dict", group_repo_dict)
 
 
 # Asynchronous initialization

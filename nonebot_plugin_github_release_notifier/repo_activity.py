@@ -238,7 +238,7 @@ async def check_repo_updates():
     try:
         bot: Bot = get_bot()
         last_processed = load_last_processed()
-        group_repo_dict = load_groups()
+        group_repo_dict = data_set.get("group_repo_dict")
     except Exception:
         return
 
