@@ -1,11 +1,11 @@
 from nonebot import require
 
 require("nonebot_plugin_htmlrender")
-# pylint: disable=wrong-import-position 
+# pylint: disable=wrong-import-position
 import nonebot_plugin_htmlrender as htmlrender
 
 
-async def text_to_pic(text: str):
+async def html_to_pic(html: str) -> bytes:
     """
     Converts the given text into an image using the htmlrender plugin.
 
@@ -17,12 +17,12 @@ async def text_to_pic(text: str):
         type: bytes
     """
     return await htmlrender.html_to_pic(
-        html=text,
+        html=html,
         screenshot_timeout=10000,
         viewport={'width': 300, 'height': 10}
     )
 
-async def md_to_pic(md_text: str):
+async def md_to_pic(md_text: str) -> bytes:
     """
     Converts the given markdown text into an image using the htmlrender plugin.
 

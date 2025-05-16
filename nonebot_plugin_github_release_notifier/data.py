@@ -12,4 +12,6 @@ class Data:
         cls.data[key] = value
 
 
+data_set = Data()
+
     

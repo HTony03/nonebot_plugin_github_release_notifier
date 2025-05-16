@@ -8,7 +8,7 @@ require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store  # noqa: E402
 
 DATA_DIR = store.get_plugin_data_dir()
-cache_dir = store.get_plugin_cache_dir()
+CACHE_DIR = store.get_plugin_cache_dir()
 
 logger.info(f"nonebot_plugin_github_release_notifier 数据文件夹 ->  {DATA_DIR}")
 
@@ -21,12 +21,8 @@ class Config(BaseModel):
     """
     github_send_faliure_group: bool = True
     github_send_faliure_superuser: bool = False
-
-    github_notify_group: dict = {}
     """
-    Group-to-repo mapping.
-    Format: {group_id: [{repo: str (, commit: bool)(, issue: bool)
-    (, pull_req: bool)(, release: bool)}]}
+    Send failure messages to the group and superuser.
     """
 
     github_retries: int = 3
@@ -37,12 +33,6 @@ class Config(BaseModel):
     github_retry_delay: int = 5
     """
     The delay (in seconds) between each validation retry.
-    """
-
-    github_del_group_repo: dict = {}
-    """
-    Delete group-repo mapping.
-    Format: {group_id: ['repo']}
     """
 
     github_disable_when_fail: bool = False
@@ -88,4 +78,4 @@ try:
 except (ValueError, TypeError) as e:
     logger.error(f"nonebot_plugin_github_release_notifier 配置读取失败: {e}")
     config = Config()
-# logger.info('got configs: ' + str(config))
+    

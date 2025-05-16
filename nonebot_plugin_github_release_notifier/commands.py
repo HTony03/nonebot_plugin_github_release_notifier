@@ -18,11 +18,11 @@ from .config import config
 from .db_action import (
     add_group_repo_data,
     remove_group_repo_data,
-    load_groups,
+    load_group_configs,
     change_group_repo_cfg,
 )
-from .permission import permission_check
-from .pic_process import text_to_pic
+from .permission import check_group_admin
+from .pic_process import html_to_pic
 
 
 
@@ -33,7 +33,7 @@ check_api_usage = on_command(
 
 
 @check_api_usage.handle()
-async def handle_check_api_usage(bot: Bot, event: MessageEvent):
+async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
     headers = {}
     from .repo_activity import GITHUB_TOKEN
@@ -93,7 +93,7 @@ def link_to_repo_name(link: str) -> str:
 # Create a command group for repository management
 repo_group = CommandGroup(
     "repo",
-    permission=SUPERUSER | permission_check,
+    permission=SUPERUSER | check_group_admin,
     priority=5
 )
 
@@ -101,7 +101,7 @@ repo_group = CommandGroup(
 @on_command(
     'add_group_repo',
     aliases={'add_repo'},
-    permission=SUPERUSER | permission_check
+    permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("add").handle()
 async def add_repo(
@@ -142,7 +142,7 @@ async def add_repo(
 @on_command(
     'delete_group_repo',
     aliases={'del_repo'},
-    permission=SUPERUSER | permission_check
+    permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("delete").handle()
 @repo_group.command("del").handle()
@@ -168,7 +168,7 @@ async def delete_repo(
         await bot.send(event, "Group ID is required for private messages.")
         return
 
-    groups_repo = load_groups()
+    groups_repo = load_group_configs()
     if group_id not in groups_repo or repo not in map(
         lambda x: x["repo"], groups_repo[group_id]
     ):
@@ -187,7 +187,7 @@ async def delete_repo(
 @on_command(
     'change_group_repo_cfg',
     aliases={'change_repo'},
-    permission=SUPERUSER | permission_check
+    permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("config").handle()
 async def change_repo(
@@ -215,7 +215,7 @@ async def change_repo(
         await bot.send(event, "Group ID is required for private messages.")
         return
 
-    groups_repo = load_groups()
+    groups_repo = load_group_configs()
     if group_id not in groups_repo or repo not in map(
         lambda x: x["repo"], groups_repo[group_id]
     ):
@@ -247,7 +247,7 @@ async def change_repo(
 @on_command(
     'show_group_repo',
     aliases={'show_repo'},
-    permission=SUPERUSER | permission_check
+    permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("show").handle()
 async def show_repo(bot: Bot, event: MessageEvent):
@@ -258,7 +258,7 @@ async def show_repo(bot: Bot, event: MessageEvent):
         else None
     )
 
-    groups_repo = load_groups()
+    groups_repo = load_group_configs()
     if group_id and group_id in groups_repo:
         repos = groups_repo[group_id]
         output = ""
@@ -293,7 +293,7 @@ async def show_repo(bot: Bot, event: MessageEvent):
 
     if '\n' in message:
         html_lines = '<p>' + message.replace('\n', '<br />') + '</p>'
-        message = MessageSegment.image(await text_to_pic(html_lines))
+        message = MessageSegment.image(await html_to_pic(html_lines))
 
     await bot.send(event, message)
 
@@ -301,13 +301,13 @@ async def show_repo(bot: Bot, event: MessageEvent):
 @on_command(
     'refresh_group_repo',
     aliases={'refresh_repo'},
-    permission=SUPERUSER | permission_check
+    permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("refresh").handle()
 async def refresh_repo(bot: Bot, event: MessageEvent):
     """Refresh repository data."""
     from . import check_repo_updates
-    load_groups(fast=False)
+    load_group_configs(fast=False)
     await bot.send(event, "Refreshing repository data...")
     await check_repo_updates()
     # await bot.send(event, "Repository data refreshed.")
@@ -390,7 +390,7 @@ Last updated: {updated}''' + \
 
                 re_text = message.replace('\n', '<br />')
                 message = MessageSegment.image(
-                        await text_to_pic(f'<p>{re_text}</p>'))
+                        await html_to_pic(f'<p>{re_text}</p>'))
     except aiohttp.ClientResponseError as e:
         message = (
             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"

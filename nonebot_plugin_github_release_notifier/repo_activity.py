@@ -3,32 +3,33 @@ import ssl
 import asyncio
 
 import aiohttp
-from nonebot import get_bot, get_driver, require
+from nonebot import get_bot, get_driver
+from nonebot.adapters.onebot.v11.message import Message
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot
 
 from .db_action import (
     load_last_processed,
     save_last_processed,
-    load_groups,
+    load_group_configs,
     change_group_repo_cfg,
 )
 from .config import config
 
-# Ensure required plugins are loaded
-require("nonebot_plugin_htmlrender")
 # pylint: disable=wrong-import-position
-from nonebot_plugin_htmlrender import html_to_pic, md_to_pic
+from .pic_process import html_to_pic, md_to_pic
+from .data import data_set
 
-superusers = get_driver().config.superusers
+superusers: set[str] = get_driver().config.superusers
 
 # Load GitHub token from environment variables
 GITHUB_TOKEN: str | None = config.github_token
+data_set.set("token", GITHUB_TOKEN)
 max_retries: int = config.github_retries
 delay: int = config.github_retry_delay
 
 # Global cache to store API responses
-api_cache = {}
+api_cache: dict = {}
 
 default_sending_templates = {
     "commit": "📜 New Commit in {repo}\n\n"
@@ -47,17 +48,17 @@ default_sending_templates = {
 config_template = config.github_sending_templates
 
 
-async def validate_github_token(retries=3, retry_delay=5) -> bool:
+async def validate_github_token(retries=3, retry_delay=5) -> None:
     """
     Validate the GitHub token by making a test request,
     with retries on SSL errors.
     """
-    global GITHUB_TOKEN
-    if not GITHUB_TOKEN:
+    token: str | None = data_set.get("token")
+    if not token:
         logger.warning(
             "No GitHub token provided. Proceeding without authentication."
         )
-        return False
+        return
 
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     for _ in range(retries):
@@ -68,14 +69,15 @@ async def validate_github_token(retries=3, retry_delay=5) -> bool:
                 ) as response:
                     if response.status == 200:
                         logger.info("GitHub token is valid.")
-                        return True
+                        return 
                     logger.error(
                                 f"GitHub token validation failed: "
                                 f"{response.status} - "
                                 f"{await response.text()}"
                                 )
-                    GITHUB_TOKEN = None
-                    return False
+                    token = None
+                    data_set.set("token", token)
+                    return
         except ssl.SSLError as e:
             logger.error(
                 f"SSL error during GitHub token validation: {e}. "
@@ -86,11 +88,12 @@ async def validate_github_token(retries=3, retry_delay=5) -> bool:
             logger.error(f"Error validating GitHub token: {e}")
 
     logger.error("GitHub token validation failed after multiple attempts.")
-    GITHUB_TOKEN = None
-    return False
+    token = None
+    data_set.set("token", token)
+    return
 
 
-async def fetch_github_data(repo: str, endpoint: str) -> list | None:
+async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
     """
     Fetch data from the GitHub API
     for a specific repo and endpoint.
@@ -107,36 +110,26 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | None:
     # If not in cache, fetch from the API
     api_url = f"https://api.github.com/repos/{repo}/{endpoint}"
     headers = (
-        {"Authorization": f"token {GITHUB_TOKEN}"}
-        if GITHUB_TOKEN
+        {"Authorization": f"token {data_set.get('token')}"}
+        if data_set.get("token")
         else {}
     )
 
     retries = 1
-    errs = []
+    errs: list = []
     while retries <= max_retries:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(api_url, headers=headers) as response:
                     response.raise_for_status()
                     data = await response.json()
-                    # Cache the response
-                    repo_data = api_cache.get(repo, {})
-                    repo_data[endpoint] = data if data else [[]]
-                    api_cache[repo] = repo_data
+                    api_cache.setdefault(repo, {})[endpoint] = data if data else [[]]
                     return data
         except aiohttp.ClientResponseError as e:
-            logger.error(
-                f"HTTP error while fetching GitHub {endpoint} for {repo} "
-                f"in attempt {retries}: {e}"
-            )
+            logger.error(f"HTTP error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}")
             errs.append(f'{e.__class__.__name__}: {e}')
         except Exception as e:
-            logger.error(
-                f"Unexpected error while fetching GitHub "
-                f"{endpoint} for {repo} in attempt {retries}: "
-                f"{e}"
-            )
+            logger.error(f"Unexpected error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}"            )
             errs.append(f'{e.__class__.__name__}: {e}\nargs:{e.args}')
         await asyncio.sleep(delay)
         retries += 1
@@ -155,18 +148,16 @@ async def notify(
     data: list,
     data_type: str,
     last_processed: dict,
-):
+) -> None:
     """Send notifications for new data (commits, issues, PRs, releases)."""
-    latest_data = data[:3]  # Process only the latest 3 items
+    latest_data: list = data[:3]
     for item in latest_data:
-        if "created_at" in item:
-            times = item["created_at"].replace("Z", "+00:00")
-        elif "published_at" in item:
-            times = item["published_at"].replace("Z", "+00:00")
-        else:
-            times = item["commit"]["author"]["date"].replace("Z", "+00:00")
-        item_time = datetime.fromisoformat(times)
-        last_time = load_last_processed().get(repo, {}).get(data_type)
+        times = item.get("created_at") or \
+                     item.get("published_at") or \
+                     item["commit"]["author"]["date"]
+
+        item_time: datetime = datetime.fromisoformat(times)
+        last_time: datetime = load_last_processed().get(repo, {}).get(data_type)
         if (
             not last_time or
             item_time > datetime.fromisoformat(
@@ -178,32 +169,20 @@ async def notify(
                     pass
                 else:
                     if data_type == 'release':
-                        msg = message.split(item.get("body", "No description provided."))
-                        message = MessageSegment.text(msg[0]) + \
-                            MessageSegment.image(await md_to_pic(
-                                item.get("body", "No description provided."))) + \
+                        logger.info(item.get('body','None'))
+                        msg: list[str] = message.split(item.get("body", "No description provided."))
+                        message: Message = MessageSegment.text(msg[0]) + \
+                            MessageSegment.image(await md_to_pic(item.get("body", "No description provided.").replace('\n', '<br>'))) + \
                             (MessageSegment.text(msg[1]) if msg[1] else MessageSegment.text(''))
                     else:
                         message = MessageSegment.text(message)
-                    await bot.send_group_msg(
-                        group_id=group_id, message=message
-                    )
+                    await bot.send_group_msg(group_id=group_id, message=message)
             except Exception as e:
-                logger.error(
-                        f"Failed to notify group {group_id} about {data_type} "
-                        f"in {repo}: {e}"
-                )
+                logger.error(f"Failed to notify group {group_id} about {data_type} in {repo}: {e}")
 
-    if "created_at" in latest_data[0]:
-        times = latest_data[0]["created_at"].replace("Z", "+00:00")
-    elif "published_at" in latest_data[0]:
-        times = latest_data[0]["published_at"].replace("Z", "+00:00")
-    else:
-        times = latest_data[0]["commit"]["author"]["date"]
-        times = times.replace("Z", "+00:00")
-
-    # Update the last processed time
-    last_processed.setdefault(repo, {})[data_type] = times
+    last_processed.setdefault(repo, {})[data_type] = latest_data[0].get("created_at") or \
+                                                     latest_data[0].get("published_at") or \
+                                                     latest_data[0]["commit"]["author"]["date"]
 
 
 def format_message(repo: str, item: dict, data_type: str) -> str:

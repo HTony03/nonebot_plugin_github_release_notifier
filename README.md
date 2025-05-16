@@ -63,10 +63,10 @@ _✨ NoneBot GitHub Release Notifier ✨_
 | GITHUB_TOKEN | 否 | 空字符串 | 用于访问 GitHub API 的 Token |
 | GITHUB_RETRIES | 否 | 3 | 刷新最大重试次数 |
 | GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
-| GITHUB_NOTIFY_GROUP | 否 | 空字典 | 群组到仓库的映射 |
-| GITHUB_DEL_GROUP_REPO | 否 | 空字典 | 删除群组仓库映射 |
 | GITHUB_DISABLE_WHEN_FAIL | 否 | False | 在获取仓库数据失败时禁用配置 |
 | GITHUB_SENDING_TEMPLATES | 否 | 默认模版 | 自定义发送信息格式（见下文） |
+
+`v0.1.9` 删除了对于`.env`添加群组repo, 请使用指令使用相关功能
 
 ### 自定义发送信息格式
 
@@ -141,6 +141,8 @@ github_sending_templates='
 本插件按照MIT协议传播
 
 ## Releases
+
+`v0.1.9` 删除了对于`.env`添加群组repo, 请使用指令使用相关功能
 
 `v0.1.8` 已知问题修复，readme更新
 

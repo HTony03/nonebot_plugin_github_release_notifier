@@ -7,7 +7,7 @@ group_data = {}
 
 
 # Initialize the database
-def init_database():
+def init_database() -> None:
     """Initialize the SQLite database and create
     the necessary table if it doesn't exist."""
     conn = sqlite3.connect(DB_FILE)
@@ -57,7 +57,7 @@ def load_last_processed() -> dict:
     return last_processed
 
 
-def save_last_processed(data: dict):
+def save_last_processed(data: dict) -> None:
     """Save the last processed timestamps to the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -83,7 +83,7 @@ def save_last_processed(data: dict):
     conn.close()
 
 
-def load_groups(fast=True) -> dict:
+def load_group_configs(fast=True) -> dict:
     """Load the group configurations from the SQLite database."""
     global group_data
     if fast:
@@ -120,7 +120,7 @@ def add_group_repo_data(
     issues: bool = False,
     prs: bool = False,
     releases: bool = False,
-):
+) -> None:
     """Add or update a group's repository
     configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
@@ -143,7 +143,7 @@ issues, prs, releases)
 
 
 def change_group_repo_cfg(group_id: int | str, repo: str,
-                          config_type: str, value: bool):
+                          config_type: str, value: bool) -> None:
     """Change a group's repository configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -166,7 +166,10 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
             f"Must be one of {list(column_mapping.keys())}."
         )
         conn.close()
-        return
+        raise ValueError(
+            f"Invalid type format '{config_type}'. "
+            f"Must be one of {list(column_mapping.keys())}."
+        )
 
     # Get the correct column name
     column = column_mapping[config_type]
@@ -188,7 +191,7 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
     conn.close()
 
 
-def remove_group_repo_data(group_id: int | str, repo: str):
+def remove_group_repo_data(group_id: int | str, repo: str) -> None:
     """Remove a group's repository configuration from the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
