@@ -84,6 +84,7 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
                 f"Retrying in {retry_delay} seconds..."
             )
             await asyncio.sleep(retry_delay)
+        # pylint: disable=broad-exception-caught
         except Exception as e:
             logger.error(f"Error validating GitHub token: {e}")
 
@@ -128,6 +129,7 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
         except aiohttp.ClientResponseError as e:
             logger.error(f"HTTP error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}")
             errs.append(f'{e.__class__.__name__}: {e}')
+        # pylint: disable=broad-exception-caught
         except Exception as e:
             logger.error(f"Unexpected error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}"            )
             errs.append(f'{e.__class__.__name__}: {e}\nargs:{e.args}')
@@ -177,6 +179,7 @@ async def notify(
                     else:
                         message = MessageSegment.text(message)
                     await bot.send_group_msg(group_id=group_id, message=message)
+            # pylint: disable=broad-exception-caught
             except Exception as e:
                 logger.error(f"Failed to notify group {group_id} about {data_type} in {repo}: {e}")
 
@@ -229,16 +232,14 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
 
 
 async def check_repo_updates():
-    """
-    Check for new commits, issues, PRs, and releases for all repos
-    and notify groups.
-    """
+    """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
     global api_cache
     api_cache = {}
     try:
         bot: Bot = get_bot()
         last_processed = load_last_processed()
         group_repo_dict = data_set.get("group_repo_dict")
+    # pylint: disable=broad-exception-caught
     except Exception:
         return
 
@@ -246,12 +247,7 @@ async def check_repo_updates():
         group_id = int(group_id)
         for repo_config in repo_configs:
             repo = repo_config["repo"]
-            for data_type, endpoint in [
-                ("commit", "commits"),
-                ("issue", "issues"),
-                ("pull_req", "pulls"),
-                ("release", "releases"),
-            ]:
+            for data_type, endpoint in [("commit", "commits"), ("issue", "issues"), ("pull_req", "pulls"), ("release", "releases")]:
                 if repo_config.get(data_type, False):
                     # Fetch data (use cache if available)
                     data = await fetch_github_data(repo, endpoint)
@@ -295,6 +291,7 @@ async def check_repo_updates():
                                             + MessageSegment.image(pic)
                                         )
                                     )
+                            # pylint: disable=broad-exception-caught
                             except Exception as e:
                                 logger.error(
                                         f"Failed to notify group {group_id} "
@@ -328,6 +325,7 @@ async def check_repo_updates():
                                                 + MessageSegment.image(pic)
                                             )
                                         )
+                                # pylint: disable=broad-exception-caught
                                 except Exception as e:
                                     logger.error(
                                         "Failed to notify the superuser "

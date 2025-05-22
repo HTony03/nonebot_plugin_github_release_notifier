@@ -36,7 +36,3 @@ jobs:
       run: python -m build
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_TOKEN }}
-      env:
-        TWINE_REPOSITORY_URL: https://upload.pypi.org/legacy/
