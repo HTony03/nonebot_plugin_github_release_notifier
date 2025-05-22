@@ -22,9 +22,10 @@ from .db_action import (
 from .commands import repo_group
 from .config import Config
 from .data import data_set
+from .debugs import debugs
 
-__version__ = "0.1.8.1"
-cmd_group = repo_group
+__version__ = "0.1.9"
+DEBUG = False
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",
@@ -47,18 +48,18 @@ logger.info(
     f"Initializing nonebot_plugin_github_release_notifier version: {__version__}"
 )
 
+if DEBUG:
+    logger.info("Debug mode is enabled. ")
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
-
-# Parse the group-to-repo mapping from the config
-group_repo_dict: dict = config.github_notify_group
 
 # Initialize the database and load group configurations
 init_database()
 
 group_repo_dict = load_group_configs(False)
-logger.debug(f"Read from db: {group_repo_dict}")
+if DEBUG:
+    logger.debug(f"Read from db: {group_repo_dict}")
 data_set.set("group_repo_dict", group_repo_dict)
 
 

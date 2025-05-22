@@ -19,6 +19,8 @@ _✨ NoneBot GitHub Release Notifier ✨_
 </a>
 <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
 
+<a href="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier"><img src="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier.svg" alt="wakatime"></a>
+
 </div>
 
 This is a plugin for monitoring GitHub repository releases and sending notifications.

@@ -25,14 +25,9 @@ from .permission import check_group_admin
 from .pic_process import html_to_pic
 
 
-
-# pylint: disable=invalid-name
-check_api_usage = on_command(
+@on_command(
     "check_api_usage", aliases={"api_usage", "github_usage"}, priority=5
-)
-
-
-@check_api_usage.handle()
+).handle()
 async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
     headers = {}
@@ -190,6 +185,7 @@ async def delete_repo(
     permission=SUPERUSER | check_group_admin
 ).handle()
 @repo_group.command("config").handle()
+@repo_group.command('cfg').handle()
 async def change_repo(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -325,6 +321,8 @@ async def repo_info(
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo info <repo>")
         return
+    
+    # TODO: usage limit per minute
 
     from .repo_activity import GITHUB_TOKEN
     repo = link_to_repo_name(command_args[0])

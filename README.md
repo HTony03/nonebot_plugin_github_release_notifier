@@ -16,7 +16,9 @@ _✨ NoneBot GitHub Release Notifier ✨_
 <a href="https://pypi.python.org/pypi/nonebot-plugin-github-release-notifier">
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-github-release-notifier.svg" alt="pypi">
 </a>
-<img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
+<img src="https://img.shields.io/badge/python-3.9+-blue.svg?style=social" alt="python">
+
+<a href="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier"><img src="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier.svg?style=social" alt="wakatime"></a>
 
 </div>
 
