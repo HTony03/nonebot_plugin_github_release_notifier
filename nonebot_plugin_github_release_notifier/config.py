@@ -10,7 +10,8 @@ import nonebot_plugin_localstore as store  # noqa: E402
 DATA_DIR = store.get_plugin_data_dir()
 CACHE_DIR = store.get_plugin_cache_dir()
 
-logger.info(f"nonebot_plugin_github_release_notifier 数据文件夹 ->  {DATA_DIR}")
+logger.info(f"data folder ->  {DATA_DIR}")
+
 
 
 class Config(BaseModel):
@@ -71,11 +72,13 @@ class Config(BaseModel):
     - issue
     - release
     """
+    github_send_in_markdown: bool = False
+
 
 
 try:
     config = get_plugin_config(Config)
 except (ValueError, TypeError) as e:
-    logger.error(f"nonebot_plugin_github_release_notifier 配置读取失败: {e}")
+    logger.error(f"read config failed: {e}, using default config")
     config = Config()
     

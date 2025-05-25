@@ -62,7 +62,6 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
                     f"Reset Time: {reset_time}"
                 )
                 await bot.send(event, message=MessageSegment.text(message))
-                logger.info("Sent GitHub API usage information.")
     except aiohttp.ClientResponseError as e:
         error_message = (
             f"Failed to fetch GitHub API usage: {e.status} - {e.message}"

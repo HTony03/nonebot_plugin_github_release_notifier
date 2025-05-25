@@ -1,28 +1,30 @@
-<div align="center">
-  <a href="https://v2.nonebot.dev/store"><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo"></a>
-  <br>
-  <p><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText"></p>
-</div>
+<p align="center">
+  <a href="https://v2.nonebot.dev/store">
+    <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo">
+  </a>
+</p>
+<p align="center">
+  <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText">
+</p>
 
-<div align="center">
+<p align="center">
+  <em>✨ NoneBot GitHub Release Notifier ✨</em>
+</p>
 
-# nonebot-plugin-github-release-notifier
-
-_✨ NoneBot GitHub Release Notifier ✨_
-
-<a href="./LICENSE">
+<p align="center">
+  <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/HTony03/nonebot_plugin_github_release_notifier.svg" alt="license">
-</a>
-<a href="https://pypi.python.org/pypi/nonebot-plugin-github-release-notifier">
+  </a>
+  <a href="https://pypi.python.org/pypi/nonebot-plugin-github-release-notifier">
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-github-release-notifier.svg" alt="pypi">
-</a>
-<img src="https://img.shields.io/badge/python-3.9+-blue.svg?style=social" alt="python">
+  </a>
+  <img src="https://img.shields.io/badge/python-3.9+-blue.svg?style=social" alt="python">
+  <a href="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier">
+    <img src="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier.svg?style=social" alt="wakatime">
+  </a>
+</p>
 
-<a href="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier"><img src="https://wakatime.com/badge/github/HTony03/nonebot_plugin_github_release_notifier.svg?style=social" alt="wakatime"></a>
-
-</div>
-
-这是一个用于监控 GitHub 仓库发布并发送通知的插件。
+本插件用于监控 GitHub 仓库发布并发送通知。
 
 ## 📖 介绍
 
@@ -109,22 +111,31 @@ github_sending_templates='
 ### 示例
 
 1. 添加仓库映射：
+
    ```
    /add_group_repo <user>/<repo>
    ```
+
 2. 删除仓库映射：
+
    ```
    /del_group_repo <user>/<repo>
    ```
+
 3. 修改仓库配置：
+
    ```
    /change_repo_config <user>/<repo> issue False
    ```
+
 4. 查看当前群组的仓库映射：
+
    ```
    /show_group_repo
    ```
+
 5. 刷新 GitHub 状态：
+
    ```
    /refresh_group_repo
    ```
@@ -137,9 +148,11 @@ github_sending_templates='
 - [ ] markdown 信息支持
 - [ ] markdown 转图片展示
 - [ ] issue/pr 详细信息支持
-
+- [ ] 转发issue/pr comments
+- [ ] 渲染gh页面展示pr/issue
 
 ## LICENCE
+
 本插件按照MIT协议传播
 
 ## Releases

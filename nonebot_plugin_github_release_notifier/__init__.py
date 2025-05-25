@@ -11,16 +11,14 @@ from nonebot import require, get_driver
 from nonebot.internal.driver.abstract import Driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_activity import check_repo_updates, validate_github_token
-from .config import config
+from .repo_activity import check_repo_updates
+from .setup import post_plugin_setup
 from .db_action import (
     init_database,
-    load_group_configs,
-    add_group_repo_data,
-    remove_group_repo_data
+    load_group_configs
 )
 from .commands import repo_group
-from .config import Config
+from .config import Config, config
 from .data import data_set
 from .debugs import debugs
 
@@ -55,7 +53,11 @@ if DEBUG:
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 
 # Initialize the database and load group configurations
-init_database()
+def pre_plugin_setup() -> None:
+    """Pre-plugin setup to initialize the database."""
+    init_database()
+
+pre_plugin_setup()
 
 group_repo_dict = load_group_configs(False)
 if DEBUG:
@@ -72,15 +74,9 @@ def refresh_data_from_db() -> None:
     data_set.set("group_repo_dict", group_repo_dict)
 
 
-# Asynchronous initialization
-async def plugin_init() -> None:
-    """Run asynchronous initialization tasks."""
-    await validate_github_token()
-
-
 # Register the initialization function to run when the bot starts
 driver: Driver = get_driver()
-driver.on_startup(plugin_init)
+driver.on_startup(post_plugin_setup)
 
 
 @scheduler.scheduled_job("cron", minute="*/5")
