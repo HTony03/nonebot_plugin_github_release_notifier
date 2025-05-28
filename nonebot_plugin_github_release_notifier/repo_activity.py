@@ -45,7 +45,7 @@ default_sending_templates = {
                "**Name:** {name}\nVersion: {version}\n"
                "Details:\n {details}\nRelease time:{time}\nURL: {url}",
 }
-config_template = config.github_sending_templates
+config_template: dict = config.github_sending_templates
 
 
 async def validate_github_token(retries=3, retry_delay=5) -> None:
@@ -99,7 +99,7 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
     Fetch data from the GitHub API
     for a specific repo and endpoint.
     """
-    cache = api_cache.get(repo, {}).get(endpoint, [])
+    cache: list|str|dict = api_cache.get(repo, {}).get(endpoint, [])
 
     # Check if the data exists in the cache
     if cache:
@@ -231,7 +231,7 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
     ).format(**datas)
 
 
-async def check_repo_updates():
+async def check_repo_updates() -> None:
     """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
     global api_cache
     api_cache = {}

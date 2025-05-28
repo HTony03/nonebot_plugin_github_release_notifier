@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring
 from typing import Any
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.adapters.onebot.v11.bot import Bot

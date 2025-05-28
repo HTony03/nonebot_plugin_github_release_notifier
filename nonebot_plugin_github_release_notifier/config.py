@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring
 from nonebot import get_plugin_config
 from nonebot import logger, require
 # pylint: disable=no-name-in-module
@@ -13,8 +14,7 @@ CACHE_DIR = store.get_plugin_cache_dir()
 logger.info(f"data folder ->  {DATA_DIR}")
 
 
-
-class Config(BaseModel):
+class Config(BaseModel): # pylint: disable=missing-class-docstring
     github_token: str = ""
     """
     GitHub token for accessing the GitHub API.
@@ -59,7 +59,7 @@ class Config(BaseModel):
     """
     Default settings for all repositories when adding a repository to groups.
     """
-    
+
     github_send_in_markdown: bool = False
     """
     Send messages in Markdown pics.
@@ -74,11 +74,10 @@ class Config(BaseModel):
     """
     github_send_in_markdown: bool = False
 
-
+    github_send_file_when_release: bool = False
 
 try:
     config = get_plugin_config(Config)
 except (ValueError, TypeError) as e:
     logger.error(f"read config failed: {e}, using default config")
     config = Config()
-    
