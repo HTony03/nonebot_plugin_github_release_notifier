@@ -7,7 +7,8 @@ import aiohttp
 from nonebot import get_bot, get_driver
 from nonebot.adapters.onebot.v11.message import Message
 from nonebot.log import logger
-from nonebot.adapters.onebot.v11 import MessageSegment, Bot
+from nonebot.adapters.onebot.v11 import MessageSegment, Bot, Message
+
 
 from .db_action import (
     load_last_processed,
@@ -94,7 +95,7 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
     data_set.set("token", token)
     return
 
-async def notify_qq(bot:Bot, group_id:int=0, user_id:int=0, message:MessageSegment=MessageSegment.text('')) -> None:
+async def notify_qq(bot:Bot, group_id:int=0, user_id:int=0, message:Message=Message(MessageSegment.text(''))) -> None:
     """
     Send a message to a QQ group or user.
     """
@@ -116,14 +117,16 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
     Fetch data from the GitHub API
     for a specific repo and endpoint.
     """
-    cache: list|str|dict = api_cache.get(repo, {}).get(endpoint, [])
+    cache = api_cache.get(repo, {}).get(endpoint, None)
 
     # Check if the data exists in the cache
-    if cache:
+    if cache is not None:
         logger.debug(f'Using cached data for {repo}/{endpoint}')
-        if cache[0] == []:
+        if isinstance(cache, list) and cache and cache[0] == []:
             return []
-        return cache
+        if isinstance(cache, (list, dict)):
+            return cache
+        # If cache is not list or dict, ignore and fetch from API
 
     # If not in cache, fetch from the API
     api_url = f"https://api.github.com/repos/{repo}/{endpoint}"
@@ -148,7 +151,7 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
             errs.append(f'{e.__class__.__name__}: {e}')
         # pylint: disable=broad-exception-caught
         except Exception as e:
-            logger.error(f"Unexpected error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}"            )
+            logger.error(f"Unexpected error while fetching GitHub {endpoint} for {repo} in attempt {retries}: {e}")
             errs.append(f'{e.__class__.__name__}: {e}\nargs:{e.args}')
         await asyncio.sleep(delay)
         retries += 1
@@ -182,7 +185,7 @@ async def notify(
             item_time > datetime.fromisoformat(
                 last_time.replace("Z", "+00:00"))
         ):
-            message = format_message(repo, item, data_type)
+            message:str = format_message(repo, item, data_type)
             try:
                 if 'issue' == data_type and 'pull' in message:
                     pass
@@ -190,15 +193,16 @@ async def notify(
                     if data_type == 'release':
                         logger.info(item.get('body','None'))
                         msg: list[str] = message.split(item.get("body", "No description provided."))
-                        message: Message = MessageSegment.text(msg[0]) + \
+                        message: MessageSegment = MessageSegment.text(msg[0]) + \
                             MessageSegment.image(await md_to_pic(item.get("body", "No description provided.").replace('\n', '<br>'))) + \
                             (MessageSegment.text(msg[1]) if msg[1] else MessageSegment.text(''))
                     else:
                         message = MessageSegment.text(message)
-                    await bot.send_group_msg(group_id=group_id, message=message)
+                    await bot.send_group_msg(group_id=group_id, message=Message(message))
             # pylint: disable=broad-exception-caught
             except Exception as e:
-                logger.error(f"Failed to notify group {group_id} about {data_type} in {repo}: {e}")
+                logger.opt(colors=True).error(f"Failed to notify group {group_id} about {data_type} in {repo}: {e}")
+                return
 
     last_processed.setdefault(repo, {})[data_type] = latest_data[0].get("created_at") or \
                                                      latest_data[0].get("published_at") or \
@@ -261,17 +265,17 @@ async def check_repo_updates() -> None:
         return
 
     # Reset disables at the start of each hour
-    reset_temp_disabled_configs(group_repo_dict)
+    reset_temp_disabled_configs()
 
     for group_id, repo_configs in group_repo_dict.items():
         group_id = int(group_id)
         for repo_config in repo_configs:
             repo = repo_config["repo"]
             for data_type, endpoint in [("commit", "commits"), ("issue", "issues"), ("pull_req", "pulls"), ("release", "releases")]:
-                if repo_config.get(data_type, False):
+                if repo_config.get(data_type, False) and not temp_disabled.get((group_id, repo, data_type)):
                     # Fetch data (use cache if available)
                     data = await fetch_github_data(repo, endpoint)
-                    if "falt" not in data and data:
+                    if data and "falt" not in data:
                         await notify(
                             bot=bot,
                             group_id=group_id,
@@ -280,15 +284,15 @@ async def check_repo_updates() -> None:
                             data_type=data_type,
                             last_processed=last_processed,
                         )
-                    elif "falt" in data:
-                        logger.error(data["falt"])
+                    elif data and "falt" in data:
+                        logger.error(data.get("falt", "Unknown error"))
                         if config.github_send_faliure_group:
                             try:
-                                if any('403' in x for x in data["errors"]):
+                                if any('403' in x for x in data.get("errors", [])):
                                     await notify_qq(
-                                        bot, group_id=group_id, message=(
+                                        bot, group_id=group_id, message=Message(
                                             MessageSegment.text(
-                                                data['falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
+                                                data.get('falt','Unknown error') + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                             )
                                         )
                                     )
@@ -303,7 +307,7 @@ async def check_repo_updates() -> None:
                                         for x in data["errors"]
                                     )
                                     pic = await html_to_pic(html)
-                                    await notify_qq(bot, group_id=group_id, message=(
+                                    await notify_qq(bot, group_id=group_id, message=Message(
                                         MessageSegment.image(pic)
                                     ))
                             # pylint: disable=broad-exception-caught
@@ -317,7 +321,7 @@ async def check_repo_updates() -> None:
                                 try:
                                     if any('403' in x for x in data["errors"]):
                                         await notify_qq(
-                                            bot, user_id=users, message=(
+                                            bot, user_id=users, message=Message(
                                                 MessageSegment.text(
                                                     data['falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                                 )
@@ -333,7 +337,7 @@ async def check_repo_updates() -> None:
                                         )
                                         pic = await html_to_pic(html)
                                         await notify_qq(
-                                            bot, user_id=users, message=(
+                                            bot, user_id=users, message=Message(
                                                 MessageSegment.image(pic)
                                             )
                                         )
@@ -346,33 +350,29 @@ async def check_repo_updates() -> None:
                                     )
                         if (
                             config.github_disable_when_fail
-                            and "SSL" not in data["falt"]
-                            and "403" not in data["falt"]
+                            and any('SSL' in x for x in data["errors"])
+                            and any('403' in x for x in data["errors"])
                         ):
                             repo_config[data_type] = False
                             change_group_repo_cfg(
                                 group_id, repo, data_type, False
                             )
-                        if '403' in data["falt"]:
+                        if any('403' in x for x in data['errors']) and config.github_disable_when_fail:
                             # Temporarily disable for this hour
-                            repo_config[data_type] = False
-                            change_group_repo_cfg(group_id, repo, data_type, False)
+                            logger.debug(
+                                f"Temporarily disabling {data_type} notifications "
+                                f"for {repo} in group {group_id} due to rate limit."
+                            )
                             temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
     save_last_processed(last_processed)
 
-def reset_temp_disabled_configs(group_repo_dict):
+def reset_temp_disabled_configs() -> None:
     """Reset configs to True if a new hour has started."""
     current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
     to_reset = []
     for key, hour in temp_disabled.items():
         if hour < current_hour:
-            group_id, repo, data_type = key
-            # Find and reset the config
-            for repo_config in group_repo_dict[str(group_id)]:
-                if repo_config["repo"] == repo:
-                    repo_config[data_type] = True
-                    change_group_repo_cfg(group_id, repo, data_type, True)
             to_reset.append(key)
     # Remove reset entries
     for key in to_reset:
