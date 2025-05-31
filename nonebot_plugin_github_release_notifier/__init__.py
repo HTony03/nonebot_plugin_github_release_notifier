@@ -80,7 +80,6 @@ driver.on_startup(post_plugin_setup)
 
 
 @scheduler.scheduled_job("cron", minute="*/5")
-# Trigger every 5 minutes (:00, :05, :10, ...)
 async def _() -> None:
     """Check for all repos and notify groups."""
     load_group_configs(False)

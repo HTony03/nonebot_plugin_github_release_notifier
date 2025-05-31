@@ -1,3 +1,4 @@
+#pylint: disable=missing-module-docstring
 from datetime import datetime
 import ssl
 import asyncio
@@ -27,7 +28,7 @@ GITHUB_TOKEN: str | None = config.github_token
 data_set.set("token", GITHUB_TOKEN)
 max_retries: int = config.github_retries
 delay: int = config.github_retry_delay
-
+temp_disabled: dict = {}
 # Global cache to store API responses
 api_cache: dict = {}
 
@@ -69,7 +70,7 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
                 ) as response:
                     if response.status == 200:
                         logger.info("GitHub token is valid.")
-                        return 
+                        return
                     logger.error(
                                 f"GitHub token validation failed: "
                                 f"{response.status} - "
@@ -92,6 +93,21 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
     token = None
     data_set.set("token", token)
     return
+
+async def notify_qq(bot:Bot, group_id:int=0, user_id:int=0, message:MessageSegment=MessageSegment.text('')) -> None:
+    """
+    Send a message to a QQ group or user.
+    """
+    if not group_id and not user_id:
+        raise ValueError("Either group_id or user_id must be provided.")
+    try:
+        if group_id:
+            await bot.send_group_msg(group_id=group_id, message=message)
+        elif user_id:
+            await bot.send_private_msg(user_id=user_id, message=message)
+    except Exception as e: #pylint: disable=broad-exception-caught
+        logger.error(f'failed to send message to {f'group {group_id}' if group_id else f'user {user_id}'}: {e}')
+
 
 
 async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
@@ -243,6 +259,9 @@ async def check_repo_updates() -> None:
     except Exception:
         return
 
+    # Reset disables at the start of each hour
+    reset_temp_disabled_configs(group_repo_dict)
+
     for group_id, repo_configs in group_repo_dict.items():
         group_id = int(group_id)
         for repo_config in repo_configs:
@@ -253,23 +272,22 @@ async def check_repo_updates() -> None:
                     data = await fetch_github_data(repo, endpoint)
                     if "falt" not in data and data:
                         await notify(
-                            bot,
-                            group_id,
-                            repo,
-                            data,
-                            data_type,
-                            last_processed,
+                            bot=bot,
+                            group_id=group_id,
+                            repo=repo,
+                            data=data,
+                            data_type=data_type,
+                            last_processed=last_processed,
                         )
                     elif "falt" in data:
                         logger.error(data["falt"])
                         if config.github_send_faliure_group:
                             try:
                                 if any('403' in x for x in data["errors"]):
-                                    await bot.send_group_msg(
-                                        group_id=group_id,
-                                        message=(
+                                    await notify_qq(
+                                        bot, group_id=group_id, message=(
                                             MessageSegment.text(
-                                                data['falt'] + "\nGitHub API rate limit exceeded.\n Probably caused by invalid / no token."
+                                                data['falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                             )
                                         )
                                     )
@@ -284,13 +302,9 @@ async def check_repo_updates() -> None:
                                         for x in data["errors"]
                                     )
                                     pic = await html_to_pic(html)
-                                    await bot.send_group_msg(
-                                        group_id=group_id,
-                                        message=(
-                                            MessageSegment.text(data["falt"])
-                                            + MessageSegment.image(pic)
-                                        )
-                                    )
+                                    await notify_qq(bot, group_id=group_id, message=(
+                                        MessageSegment.image(pic)
+                                    ))
                             # pylint: disable=broad-exception-caught
                             except Exception as e:
                                 logger.error(
@@ -301,11 +315,10 @@ async def check_repo_updates() -> None:
                             for users in superusers:
                                 try:
                                     if any('403' in x for x in data["errors"]):
-                                        await bot.send_private_msg(
-                                            user_id=users,
-                                            message=(
+                                        await notify_qq(
+                                            bot, user_id=users, message=(
                                                 MessageSegment.text(
-                                                    data['falt'] + "\nGitHub API rate limit exceeded.\n Probably caused by invalid / no token."
+                                                    data['falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                                 )
                                             )
                                         )
@@ -318,11 +331,9 @@ async def check_repo_updates() -> None:
                                             for x in data["errors"]
                                         )
                                         pic = await html_to_pic(html)
-                                        await bot.send_private_msg(
-                                            user_id=users,
-                                            message=(
-                                                MessageSegment.text(data["falt"])
-                                                + MessageSegment.image(pic)
+                                        await notify_qq(
+                                            bot, user_id=users, message=(
+                                                MessageSegment.image(pic)
                                             )
                                         )
                                 # pylint: disable=broad-exception-caught
@@ -341,5 +352,28 @@ async def check_repo_updates() -> None:
                             change_group_repo_cfg(
                                 group_id, repo, data_type, False
                             )
+                    # TODO: temporary disable when 403
+                        if '403' in data["falt"]:
+                            # Temporarily disable for this hour
+                            repo_config[data_type] = False
+                            change_group_repo_cfg(group_id, repo, data_type, False)
+                            temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
     save_last_processed(last_processed)
+
+def reset_temp_disabled_configs(group_repo_dict):
+    """Reset configs to True if a new hour has started."""
+    current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    to_reset = []
+    for key, hour in temp_disabled.items():
+        if hour < current_hour:
+            group_id, repo, data_type = key
+            # Find and reset the config
+            for repo_config in group_repo_dict[str(group_id)]:
+                if repo_config["repo"] == repo:
+                    repo_config[data_type] = True
+                    change_group_repo_cfg(group_id, repo, data_type, True)
+            to_reset.append(key)
+    # Remove reset entries
+    for key in to_reset:
+        del temp_disabled[key]
