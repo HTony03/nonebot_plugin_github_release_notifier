@@ -106,7 +106,8 @@ async def notify_qq(bot:Bot, group_id:int=0, user_id:int=0, message:MessageSegme
         elif user_id:
             await bot.send_private_msg(user_id=user_id, message=message)
     except Exception as e: #pylint: disable=broad-exception-caught
-        logger.error(f'failed to send message to {f'group {group_id}' if group_id else f'user {user_id}'}: {e}')
+        recipient = f'group {group_id}' if group_id else f'user {user_id}'
+        logger.error(f'failed to send message to {recipient}: {e}')
 
 
 
@@ -352,7 +353,6 @@ async def check_repo_updates() -> None:
                             change_group_repo_cfg(
                                 group_id, repo, data_type, False
                             )
-                    # TODO: temporary disable when 403
                         if '403' in data["falt"]:
                             # Temporarily disable for this hour
                             repo_config[data_type] = False
