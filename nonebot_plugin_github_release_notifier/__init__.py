@@ -22,7 +22,7 @@ from .config import Config, config
 from .data import data_set
 from .debugs import debugs
 
-__version__ = "0.1.9"
+__version__ = "0.1.9.dev1"
 DEBUG = False
 
 __plugin_meta__ = PluginMetadata(

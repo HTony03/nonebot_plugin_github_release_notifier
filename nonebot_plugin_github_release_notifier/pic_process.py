@@ -33,6 +33,10 @@ async def md_to_pic(md_text: str) -> bytes:
         The generated image in bytes format.
         type: bytes
     """
-    return await htmlrender.md_to_pic(
-        md_text
+    md_text = md_text.replace("\n","\n\r\n")
+    from .config import CACHE_DIR as cache_dir
+    with open(f"{cache_dir}/md_text.md", "w", encoding="utf-8") as f:
+        f.write(md_text)
+
+    return await htmlrender.md_to_pic(md=md_text
     )

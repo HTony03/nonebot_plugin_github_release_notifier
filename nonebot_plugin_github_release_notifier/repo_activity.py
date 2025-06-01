@@ -1,7 +1,8 @@
-#pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from datetime import datetime
 import ssl
 import asyncio
+import os
 
 import aiohttp
 from nonebot import get_bot, get_driver
@@ -163,58 +164,15 @@ async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
     }
 
 
-async def notify(
-    bot: Bot,
-    group_id: int,
-    repo: str,
-    data: list,
-    data_type: str,
-    last_processed: dict,
-) -> None:
-    """Send notifications for new data (commits, issues, PRs, releases)."""
-    latest_data: list = data[:3]
-    for item in latest_data:
-        times = item.get("created_at") or \
-                     item.get("published_at") or \
-                     item["commit"]["author"]["date"]
-
-        item_time: datetime = datetime.fromisoformat(times)
-        last_time: datetime = load_last_processed().get(repo, {}).get(data_type)
-        if (
-            not last_time or
-            item_time > datetime.fromisoformat(
-                last_time.replace("Z", "+00:00"))
-        ):
-            message:str = format_message(repo, item, data_type)
-            try:
-                if 'issue' == data_type and 'pull' in message:
-                    pass
-                else:
-                    if data_type == 'release':
-                        logger.info(item.get('body','None'))
-                        msg: list[str] = message.split(item.get("body", "No description provided."))
-                        message: MessageSegment = MessageSegment.text(msg[0]) + \
-                            MessageSegment.image(await md_to_pic(item.get("body", "No description provided.").replace('\n', '<br>'))) + \
-                            (MessageSegment.text(msg[1]) if msg[1] else MessageSegment.text(''))
-                    else:
-                        message = MessageSegment.text(message)
-                    await bot.send_group_msg(group_id=group_id, message=Message(message))
-            # pylint: disable=broad-exception-caught
-            except Exception as e:
-                logger.opt(colors=True).error(f"Failed to notify group {group_id} about {data_type} in {repo}: {e}")
-                return
-
-    last_processed.setdefault(repo, {})[data_type] = latest_data[0].get("created_at") or \
-                                                     latest_data[0].get("published_at") or \
-                                                     latest_data[0]["commit"]["author"]["date"]
-
-
-def format_message(repo: str, item: dict, data_type: str) -> str:
+def format_message(repo: str, item: dict, data_type: str, only_first_line: bool = True) -> str:
     """Format the notification message based on the data type."""
     if data_type == "commit":
+        message = item["commit"]["message"]
+        if only_first_line:
+            message = message.split("\n")[0]
         datas = {
             "repo": repo,
-            "message": item["commit"]["message"],
+            "message": message,
             "author": item["commit"]["author"]["name"],
             "url": item["html_url"],
             "time": item["commit"]["author"]["date"],
@@ -251,6 +209,99 @@ def format_message(repo: str, item: dict, data_type: str) -> str:
         data_type, default_sending_templates.get(data_type, "")
     ).format(**datas)
 
+
+async def send_release_files(bot: Bot, group_id: int, item: dict):
+    """Send release assets to group if enabled."""
+    if not config.github_upload_file_when_release:
+        return
+    assets = item.get("assets", [])
+    upload_folder = config.github_upload_folder or ""
+    return
+    # TODO: rebase copilot lines
+    for asset in assets:
+        download_url = asset.get("browser_download_url")
+        filename = asset.get("name")
+        if not download_url or not filename:
+            continue
+        try:
+            # Download the file
+            async with aiohttp.ClientSession() as session:
+                async with session.get(download_url) as resp:
+                    resp.raise_for_status()
+                    file_bytes = await resp.read()
+            # Save to upload folder if specified
+            if upload_folder:
+                os.makedirs(upload_folder, exist_ok=True)
+                file_path = os.path.join(upload_folder, filename)
+                with open(file_path, "wb") as f:
+                    f.write(file_bytes)
+            # Send as file to group (if supported by your bot framework)
+            await bot.send_group_msg(
+                group_id=group_id,
+                message=Message(MessageSegment.text(f"Release file: {filename}")),
+            )
+            # You may need to implement actual file sending if your bot supports it
+        except Exception as e:
+            logger.error(f"Failed to send release file {filename}: {e}")
+
+
+async def notify(
+    bot: Bot,
+    group_id: int,
+    repo: str,
+    data: list,
+    data_type: str,
+    last_processed: dict,
+) -> None:
+    """Send notifications for new data (commits, issues, PRs, releases)."""
+    latest_data: list = data[:3]
+    for item in latest_data:
+        times = item.get("created_at") or \
+                item.get("published_at") or \
+                item.get("commit", {}).get("author", {}).get("date")
+        if not times:
+            continue
+        item_time: datetime = datetime.fromisoformat(times.replace("Z", "+00:00"))
+        last_time: str | None = load_last_processed().get(repo, {}).get(data_type)
+        if not last_time or item_time > datetime.fromisoformat(last_time.replace("Z", "+00:00")):
+            # Markdown rendering
+            if config.github_send_in_markdown:
+                md_content = format_message(repo, item, data_type)
+                pic: bytes = await md_to_pic(md_content)
+                await bot.send_group_msg(group_id=group_id, message=Message(MessageSegment.image(pic)))
+            else:
+                # Only show first line for release if not markdown
+                message = format_message(repo, item, data_type)
+                if config.github_send_detail_in_markdown and data_type in ('release',):
+                    markdown_text: str = item.get('details', 'No details provided.')
+                    splited: list[str] = message.split(markdown_text)
+                    pic = await md_to_pic(markdown_text)
+                    msg_all = MessageSegment.text(splited[0]) + MessageSegment.image(pic) + MessageSegment.text(splited[1])
+                else:
+                    msg_all = MessageSegment.text(message)
+                await bot.send_group_msg(group_id=group_id, message=Message(msg_all))
+                # Send release files if enabled
+                if data_type == "release":
+                    await send_release_files(bot, group_id, item)
+    # Update last processed
+    if latest_data:
+        last_processed.setdefault(repo, {})[data_type] = (
+            latest_data[0].get("created_at")
+            or latest_data[0].get("published_at")
+            or latest_data[0].get("commit", {}).get("author", {}).get("date")
+        )
+
+
+def reset_temp_disabled_configs() -> None:
+    """Reset configs to True if a new hour has started."""
+    current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    to_reset = []
+    for key, hour in temp_disabled.items():
+        if hour < current_hour:
+            to_reset.append(key)
+    # Remove reset entries
+    for key in to_reset:
+        del temp_disabled[key]
 
 async def check_repo_updates() -> None:
     """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
@@ -366,14 +417,3 @@ async def check_repo_updates() -> None:
                             temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
     save_last_processed(last_processed)
-
-def reset_temp_disabled_configs() -> None:
-    """Reset configs to True if a new hour has started."""
-    current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
-    to_reset = []
-    for key, hour in temp_disabled.items():
-        if hour < current_hour:
-            to_reset.append(key)
-    # Remove reset entries
-    for key in to_reset:
-        del temp_disabled[key]
