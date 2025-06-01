@@ -2,7 +2,8 @@ from datetime import datetime  # Standard library imports
 import aiohttp  # Third-party imports
 
 from nonebot import CommandGroup, on_command
-from nonebot.adapters.onebot.v11 import Bot
+from nonebot.adapters.onebot.v11 import GROUP_ADMIN, GROUP_OWNER, Bot
+from nonebot.adapters.onebot.v11.helpers import Cooldown
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
@@ -21,13 +22,12 @@ from .db_action import (
     load_group_configs,
     change_group_repo_cfg,
 )
-from .permission import check_group_admin
 from .pic_process import html_to_pic, md_to_pic
 
 
 @on_command(
     "check_api_usage", aliases={"api_usage", "github_usage"}, priority=5
-).handle()
+).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
     headers = {}
@@ -87,7 +87,7 @@ def link_to_repo_name(link: str) -> str:
 # Create a command group for repository management
 repo_group = CommandGroup(
     "repo",
-    permission=SUPERUSER | check_group_admin,
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER,
     priority=5
 )
 
@@ -95,7 +95,7 @@ repo_group = CommandGroup(
 @on_command(
     'add_group_repo',
     aliases={'add_repo'},
-    permission=SUPERUSER | check_group_admin
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER
 ).handle()
 @repo_group.command("add").handle()
 async def add_repo(
@@ -136,7 +136,7 @@ async def add_repo(
 @on_command(
     'delete_group_repo',
     aliases={'del_repo'},
-    permission=SUPERUSER | check_group_admin
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER
 ).handle()
 @repo_group.command("delete").handle()
 @repo_group.command("del").handle()
@@ -181,7 +181,7 @@ async def delete_repo(
 @on_command(
     'change_group_repo_cfg',
     aliases={'change_repo'},
-    permission=SUPERUSER | check_group_admin
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER
 ).handle()
 @repo_group.command("config").handle()
 @repo_group.command('cfg').handle()
@@ -242,7 +242,7 @@ async def change_repo(
 @on_command(
     'show_group_repo',
     aliases={'show_repo'},
-    permission=SUPERUSER | check_group_admin
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER
 ).handle()
 @repo_group.command("show").handle()
 async def show_repo(bot: Bot, event: MessageEvent):
@@ -296,7 +296,7 @@ async def show_repo(bot: Bot, event: MessageEvent):
 @on_command(
     'refresh_group_repo',
     aliases={'refresh_repo'},
-    permission=SUPERUSER | check_group_admin
+    permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER
 ).handle()
 @repo_group.command("refresh").handle()
 async def refresh_repo(bot: Bot, event: MessageEvent):
@@ -311,7 +311,7 @@ async def refresh_repo(bot: Bot, event: MessageEvent):
 @on_command(
     'repo_info',
     aliases={'repo.info'}
-).handle()
+).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def repo_info(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -399,7 +399,7 @@ Last updated: {updated}''' + \
     await bot.send(event, message)
 
 
-@on_command("latest_release", aliases={"repo_release", "get_release"}).handle()
+@on_command("latest_release", aliases={"repo_release", "get_release"}).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def latest_release(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
@@ -462,7 +462,7 @@ async def latest_release(
         await bot.send(event, f"Error fetching latest release: {e}")
 
 
-@on_command("latest_commit", aliases={"repo_commit", "get_commit"}).handle()
+@on_command("latest_commit", aliases={"repo_commit", "get_commit"}).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def latest_commit(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):

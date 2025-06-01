@@ -106,6 +106,8 @@ github_sending_templates='
 
 ### 指令表
 
+本插件所有**非仅管理员或SUPERUSEES**指令均设有15s Cooldown
+
 | 指令 | 权限 | 需要@ | 范围 | 说明 |
 |:-----:|:----:|:----:|:----:|:----:|
 | /add_group_repo 或 /repo.add | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 添加群组仓库映射 |
@@ -113,7 +115,7 @@ github_sending_templates='
 | /change_group_repo_cfg 或 /repo.config 或 /repo.cfg | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 修改仓库配置 |
 | /show_group_repo 或 /repo.show | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 查看群组仓库映射 |
 | /refresh_group_repo 或 /repo.refresh | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 刷新 GitHub 状态 |
-| /repo_info 或 /repo.info | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 查看仓库详细信息 |
+| /repo_info 或 /repo.info | 所有人 | 否 | 私聊&群聊 | 查看仓库详细信息 |
 | /check_api_usage | 所有人 | 否 | 私聊&群聊 | 查看 GitHub API 使用情况 |
 | /latest_release | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Release |
 | /latest_commit | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Commit |
@@ -179,15 +181,15 @@ github_sending_templates='
 - [x] 自定义发送信息格式
 - [ ] 添加help
 - [ ] 数据库结构重置
-- [ ] markdown 信息支持
-- [ ] markdown 转图片展示
+- [x] markdown 信息支持
+- [x] markdown 转图片展示
 - [ ] issue/pr 详细信息支持
 - [ ] 转发issue/pr comments
 - [ ] 渲染gh页面展示pr/issue
 
 ## LICENCE
 
-本插件按照MIT协议传播
+本插件按照MIT协议传播，相关LICENCE见[此处](./LICENSE)
 
 ## Releases
 
