@@ -69,8 +69,16 @@
 | GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
 | GITHUB_DISABLE_WHEN_FAIL | 否 | False | 在获取仓库数据失败时禁用配置 |
 | GITHUB_SENDING_TEMPLATES | 否 | 默认模版 | 自定义发送信息格式（见下文） |
+| GITHUB_SEND_FALIURE_GROUP | 否 | True | 失败时是否通知群聊 |
+| GITHUB_SEND_FALIURE_SUPERUSER | 否 | False | 失败时是否通知超级用户 |
+| GITHUB_DEFAULT_CONFIG_SETTING | 否 | True | 添加仓库时默认监控所有事件 |
+| GITHUB_SEND_IN_MARKDOWN | 否 | False | 是否以 Markdown 图片方式发送消息 |
+| GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 | True | 是否以 Markdown 图片方式发送详细信息（pr/issue/release）|
+| GITHUB_UPLOAD_FILE_WHEN_RELEASE | 否 | False | 发布 release 时是否上传文件 |
+| GITHUB_UPLOAD_FOLDER | 否 | None | 上传文件的本地文件夹路径 |
+| GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 | True | 上传 release 文件时是否移除旧版本 |
 
-`v0.1.9` 删除了对于`.env`添加群组repo, 请使用指令使用相关功能
+`v0.1.9` 删除了对于`.env`添加群组repo的适配, 请使用指令使用相关功能
 
 ### 自定义发送信息格式
 
@@ -101,12 +109,14 @@ github_sending_templates='
 | 指令 | 权限 | 需要@ | 范围 | 说明 |
 |:-----:|:----:|:----:|:----:|:----:|
 | /add_group_repo 或 /repo.add | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 添加群组仓库映射 |
-| /del_group_repo 或 /repo.delete | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 删除群组仓库映射 |
-| /change_repo_config 或 /repo.config | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 修改仓库配置 |
+| /del_group_repo 或 /repo.delete 或 /repo.del | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 删除群组仓库映射 |
+| /change_group_repo_cfg 或 /repo.config 或 /repo.cfg | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 修改仓库配置 |
 | /show_group_repo 或 /repo.show | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 查看群组仓库映射 |
 | /refresh_group_repo 或 /repo.refresh | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 刷新 GitHub 状态 |
 | /repo_info 或 /repo.info | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 查看仓库详细信息 |
 | /check_api_usage | 所有人 | 否 | 私聊&群聊 | 查看 GitHub API 使用情况 |
+| /latest_release | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Release |
+| /latest_commit | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Commit |
 
 ### 示例
 
@@ -125,7 +135,7 @@ github_sending_templates='
 3. 修改仓库配置：
 
    ```
-   /change_repo_config <user>/<repo> issue False
+   /change_group_repo_cfg <user>/<repo> issue False
    ```
 
 4. 查看当前群组的仓库映射：
@@ -138,6 +148,30 @@ github_sending_templates='
 
    ```
    /refresh_group_repo
+   ```
+
+6. 查看仓库详细信息：
+
+   ```
+   /repo_info <user>/<repo>
+   ```
+
+7. 查看 API 使用情况：
+
+   ```
+   /check_api_usage
+   ```
+
+8. 获取最新 Release：
+
+   ```
+   /latest_release <user>/<repo>
+   ```
+
+9. 获取最新 Commit：
+
+   ```
+   /latest_commit <user>/<repo>
    ```
 
 ### TODOS
