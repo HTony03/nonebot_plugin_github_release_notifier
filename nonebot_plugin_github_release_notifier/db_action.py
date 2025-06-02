@@ -106,7 +106,7 @@ def load_group_configs(fast=True) -> dict:
     # Convert rows to a dictionary
     group_data = {}
     for row in rows:
-        groupid, repo, commits, prs, issues, releases = row
+        groupid, repo, commits, prs, issues, releases, send_folder, send_release= row
         if groupid not in group_data:
             data = []
         else:
@@ -117,6 +117,8 @@ def load_group_configs(fast=True) -> dict:
             "issue": issues if issues else False,
             "pull_req": prs if prs else False,
             "release": releases if releases else False,
+            "send_release": send_release if send_release else False,
+            "release_folder": send_folder if send_folder else None,
         })
         group_data[groupid] = data
     return group_data
@@ -129,6 +131,8 @@ def add_group_repo_data(
     issues: bool = False,
     prs: bool = False,
     releases: bool = False,
+    release_folder: str | None = None,
+    send_release: bool = False
 ) -> None:
     """Add or update a group's repository
     configuration in the SQLite database."""
@@ -139,13 +143,15 @@ def add_group_repo_data(
     cursor.execute("""
         INSERT INTO group_config (groupid, repo, commits,
 issues, prs, releases)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(groupid, repo) DO UPDATE SET
             commits=excluded.commits,
             issues=excluded.issues,
             prs=excluded.prs,
-            releases=excluded.releases
-    """, (group_id, repo, commits, issues, prs, releases))
+            releases=excluded.releases,
+            release_folder=excluded.release_folder,
+            send_release=excluded.send_release
+    """, (group_id, repo, commits, issues, prs, releases, release_folder, send_release))
 
     conn.commit()
     conn.close()

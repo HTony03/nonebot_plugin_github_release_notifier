@@ -274,14 +274,14 @@ async def notify(
         item_time: datetime = datetime.fromisoformat(times.replace("Z", "+00:00"))
         last_time: str | None = load_last_processed().get(repo, {}).get(data_type)
         if not last_time or item_time > datetime.fromisoformat(last_time.replace("Z", "+00:00")):
-            # Markdown rendering
+            message: str = format_message(repo, item, data_type)
+            if data_type == 'issue' and 'pull' in message:
+                continue
             if config.github_send_in_markdown:
-                md_content = format_message(repo, item, data_type)
-                pic: bytes = await md_to_pic(md_content)
+                pic: bytes = await md_to_pic(message)
                 await bot.send_group_msg(group_id=group_id, message=Message(MessageSegment.image(pic)))
             else:
                 # Only show first line for release if not markdown
-                message = format_message(repo, item, data_type)
                 if config.github_send_detail_in_markdown and data_type in ('release',):
                     markdown_text: str = item.get('details', 'No details provided.')
                     splited: list[str] = message.split(markdown_text)
