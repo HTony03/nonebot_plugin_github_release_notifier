@@ -108,7 +108,7 @@ For private messages, add the group ID at the end of the command, e.g. `/repo.ad
 |:-------:|:----------:|:----------:|:-----:|:-----------:|
 | /add_group_repo or /repo.add | SUPERUSERS or Admins | No | Private & Group | Add group-repository mapping |
 | /del_group_repo or /repo.delete or /repo.del | SUPERUSERS or Admins | No | Private & Group | Delete group-repository mapping |
-| /change_group_repo_cfg or /repo.config or /repo.cfg | SUPERUSERS or Admins | No | Private & Group | Modify repository configuration |
+| /change_group_repo_cfg or /repo.config or /repo.cfg | SUPERUSERS or Admins | No | Private & Group | Modify repository configuration (supports boolean and string configs, see below) |
 | /show_group_repo or /repo.show | SUPERUSERS or Admins | No | Private & Group | View group-repository mapping |
 | /refresh_group_repo or /repo.refresh | SUPERUSERS or Admins | No | Private & Group | Refresh GitHub status |
 | /repo_info or /repo.info | Everyone | No | Private & Group | View repository details |
@@ -133,7 +133,18 @@ For private messages, add the group ID at the end of the command, e.g. `/repo.ad
 3. Modify repository configuration:
 
    ```
+   /change_group_repo_cfg <user>/<repo> <config> <value>
+   ```
+
+   - `<config>` options and types:
+     - `commit`/`issue`/`pull_req`/`release`/`commits`/`issues`/`prs`/`releases`/`send_release`: boolean (True/False)
+     - `release_folder`: string
+
+   For example:
+
+   ```
    /change_group_repo_cfg <user>/<repo> issue False
+   /change_group_repo_cfg <user>/<repo> release_folder <folder_name>
    ```
 
 4. View the repository mappings for the current group:
@@ -197,4 +208,4 @@ This plugin is distributed under the MIT License. See [here](./LICENSE) for deta
 
 `V0.1.2` Updated release information
 
-`V0.1.0`-`V0.1.1` Main program completed, features adapted, ready for release
+`V0.1.0`-`V0.1.1` Main program completed, features adapted, ready for 

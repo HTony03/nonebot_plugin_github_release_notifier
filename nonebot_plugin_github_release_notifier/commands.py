@@ -191,7 +191,13 @@ async def change_repo(
     """Change repository configuration."""
     command_args = args.extract_plain_text().split()
     if len(command_args) < 3:
-        await bot.send(event, "Usage: repo change <repo> <config> <value>")
+        await bot.send(
+            event,
+            "Usage: repo change <repo> <config> <value>\n"
+            "Config types:\n"
+            "- commit/issue/pull_req/release/commits/issues/prs/releases/send_release: bool (True/False)\n"
+            "- release_folder: string (folder path)"
+        )
         return
 
     repo = link_to_repo_name(command_args[0])
@@ -226,7 +232,11 @@ async def change_repo(
         'send_release'
     ]:
         await bot.send(
-            event, f"Invalid configuration key: {config_key}."
+            event,
+            f"Invalid configuration key: {config_key}.\n"
+            "Config types:\n"
+            "- commit/issue/pull_req/release/commits/issues/prs/releases/send_release: bool (True/False)\n"
+            "- release_folder: string (folder path)"
         )
         return
 

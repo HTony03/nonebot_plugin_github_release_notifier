@@ -114,7 +114,7 @@ github_sending_templates='
 |:-----:|:----:|:----:|:----:|:----:|
 | /add_group_repo 或 /repo.add | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 添加群组仓库映射 |
 | /del_group_repo 或 /repo.delete 或 /repo.del | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 删除群组仓库映射 |
-| /change_group_repo_cfg 或 /repo.config 或 /repo.cfg | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 修改仓库配置 |
+| /change_group_repo_cfg 或 /repo.config 或 /repo.cfg | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 修改仓库配置（支持布尔型和字符串型配置，详见下方说明） |
 | /show_group_repo 或 /repo.show | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 查看群组仓库映射 |
 | /refresh_group_repo 或 /repo.refresh | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 刷新 GitHub 状态 |
 | /repo_info 或 /repo.info | 所有人 | 否 | 私聊&群聊 | 查看仓库详细信息 |
@@ -139,7 +139,18 @@ github_sending_templates='
 3. 修改仓库配置：
 
    ```
+   /change_group_repo_cfg <user>/<repo> <config> <value>
+   ```
+
+   - `<config>` 可选项及类型：
+     - `commit`/`issue`/`pull_req`/`release`/`commits`/`issues`/`prs`/`releases`/`send_release`：布尔值（True/False）
+     - `release_folder`：字符串
+
+   例如：
+
+   ```
    /change_group_repo_cfg <user>/<repo> issue False
+   /change_group_repo_cfg <user>/<repo> release_folder <folder_name>
    ```
 
 4. 查看当前群组的仓库映射：
