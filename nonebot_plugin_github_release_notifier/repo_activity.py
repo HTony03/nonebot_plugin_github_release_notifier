@@ -230,6 +230,16 @@ async def send_release_files(bot: Bot, group_id: int, item: dict):
                     resp.raise_for_status()
                     file_bytes = await resp.read()
             # Save to upload folder if specified
+            folders = await bot.call_api(
+                "get_group_root_files",
+                group_id=group_id,
+            )
+            if not folders.get('files'):
+                ...
+                #require further consideration
+            
+            
+            
             if upload_folder:
                 os.makedirs(upload_folder, exist_ok=True)
                 file_path = os.path.join(upload_folder, filename)

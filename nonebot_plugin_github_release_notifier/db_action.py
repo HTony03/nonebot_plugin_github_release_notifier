@@ -29,9 +29,18 @@ def init_database() -> None:
             issues BOOLEAN,
             prs BOOLEAN,
             releases BOOLEAN,
-            PRIMARY KEY (groupid, repo)  -- Composite primary key
+            release_folder TEXT,
+            send_release BOOLEAN,
+            PRIMARY KEY (groupid, repo)
         )
     """)
+    # Check if 'release_folder' column exists, add if not
+    cursor.execute("PRAGMA table_info(group_config)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if "release_folder" not in columns:
+        cursor.execute("ALTER TABLE group_config ADD COLUMN release_folder TEXT")
+    if "send_release" not in columns:
+        cursor.execute("ALTER TABLE group_config ADD COLUMN send_release BOOLEAN")
     conn.commit()
     conn.close()
 
@@ -143,7 +152,7 @@ issues, prs, releases)
 
 
 def change_group_repo_cfg(group_id: int | str, repo: str,
-                          config_type: str, value: bool) -> None:
+                          config_type: str, value: bool | str) -> None:
     """Change a group's repository configuration in the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -159,6 +168,8 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
         "issues": "issues",
         "prs": "prs",
         "releases": "releases",
+        "release_folder": "release_folder",
+        "send_release": "send_release",
     }
     if config_type not in column_mapping:
         logger.error(

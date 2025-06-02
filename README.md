@@ -26,9 +26,11 @@
 
 本插件用于监控 GitHub 仓库发布并发送通知。
 
+其他语言 | Other languages: [English](/README_en.md)
+
 ## 📖 介绍
 
-该插件可以监控多个 GitHub 仓库，通过 QQ Bot 通知用户新动态，并支持自定义通知格式。
+本插件可以监控多个 GitHub 仓库，通过 QQ Bot 通知用户新动态，并支持自定义通知格式。
 
 ## 💿 安装
 
@@ -74,9 +76,7 @@
 | GITHUB_DEFAULT_CONFIG_SETTING | 否 | True | 添加仓库时默认监控所有事件 |
 | GITHUB_SEND_IN_MARKDOWN | 否 | False | 是否以 Markdown 图片方式发送消息 |
 | GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 | True | 是否以 Markdown 图片方式发送详细信息（pr/issue/release）|
-| GITHUB_UPLOAD_FILE_WHEN_RELEASE | 否 | False | 发布 release 时是否上传文件 |
-| GITHUB_UPLOAD_FOLDER | 否 | None | 上传文件的本地文件夹路径 |
-| GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 | True | 上传 release 文件时是否移除旧版本 |
+| GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 | True | 上传 release 文件时是否移除旧版本( in development) |
 
 `v0.1.9` 删除了对于`.env`添加群组repo的适配, 请使用指令使用相关功能
 
@@ -107,6 +107,8 @@ github_sending_templates='
 ### 指令表
 
 本插件所有**非仅管理员或SUPERUSEES**指令均设有15s Cooldown
+
+私聊使用command请将配置群号放在指令最后，如`/repo.add <user>/<repo> <group_id>`
 
 | 指令 | 权限 | 需要@ | 范围 | 说明 |
 |:-----:|:----:|:----:|:----:|:----:|

@@ -197,6 +197,8 @@ async def change_repo(
     repo = link_to_repo_name(command_args[0])
     config_key = command_args[1]
     config_value = command_args[2].lower() in ("true", "1", "yes", "t")
+    if config_key == 'release_folder':
+        config_value = command_args[2]  # Keep as string for folder path
 
     group_id = (
         str(event.group_id)
@@ -220,7 +222,8 @@ async def change_repo(
         return
     if config_key not in [
         "commit", "issue", "pull_req", "release",
-        "commits", "issues", "prs", "releases"
+        "commits", "issues", "prs", "releases", 'release_folder',
+        'send_release'
     ]:
         await bot.send(
             event, f"Invalid configuration key: {config_key}."

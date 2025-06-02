@@ -74,10 +74,6 @@ class Config(BaseModel): # pylint: disable=missing-class-docstring
     """
     github_send_in_markdown: bool = False
 
-    github_upload_file_when_release: bool = False
-
-    github_upload_folder: str| None = None
-
     github_upload_remove_older_ver: bool = True
 
 
