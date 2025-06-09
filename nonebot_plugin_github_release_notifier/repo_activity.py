@@ -214,13 +214,39 @@ async def send_release_files(bot: Bot, group_id: int, item: dict):
     """Send release assets to group if enabled."""
     if not config.github_upload_file_when_release:
         return
-    assets = item.get("assets", [])
-    upload_folder = config.github_upload_folder or ""
+
+    # check if the file folder exists
+    upload_folder = data_set.get('group_repo_dict',default={}).get(group_id,{}).get('release_folder',None)
+    folders = await bot.call_api(
+        "get_group_root_files",
+        group_id=group_id,
+    )
+    if data_set.get('group_repo_dict',default={}).get(str(group_id), {}).get('send_release', False):
+        upload_folder = data_set.get('group_repo_dict',default={}).get(str(group_id), {}).get('release_folder', upload_folder)
+        if not folders.get('folders') or not upload_folder in folders.get('folders'):
+            # If the folder does not exist, create it
+            await bot.call_api('create_group_file_folder',
+                         group_id=group_id,
+                         name=upload_folder,
+                         parent_id='/')
+            call2 = await bot.call_api(
+                "get_group_root_files",
+                group_id=group_id,
+            )
+            if not upload_folder in call2.get('folders', []):
+                logger.error(f"Failed to create upload folder {upload_folder} in group {group_id}.")
+                logger.error('Auto upload to Root folder.')
+                upload_folder = None
+    else:
+        upload_folder = None
+
+    assets = item[0].get("assets", [])
     return
     # TODO: rebase copilot lines
     for asset in assets:
         download_url = asset.get("browser_download_url")
         filename = asset.get("name")
+        file_route = os.path.join(CACHE_DIR, filename)
         if not download_url or not filename:
             continue
         try:
@@ -229,30 +255,31 @@ async def send_release_files(bot: Bot, group_id: int, item: dict):
                 async with session.get(download_url) as resp:
                     resp.raise_for_status()
                     file_bytes = await resp.read()
-            # Save to upload folder if specified
-            folders = await bot.call_api(
-                "get_group_root_files",
+                    with open(file_route, "wb") as f:
+                        f.write(file_bytes)
+            await bot.call_api(
+                "upload_group_file",
                 group_id=group_id,
+                file=file_route,
+                name=filename,
+                folder=upload_folder if upload_folder else None,
             )
-            if not folders.get('files'):
-                ...
-                #require further consideration
-            
-            
-            
-            if upload_folder:
-                os.makedirs(upload_folder, exist_ok=True)
-                file_path = os.path.join(upload_folder, filename)
-                with open(file_path, "wb") as f:
-                    f.write(file_bytes)
-            # Send as file to group (if supported by your bot framework)
-            await bot.send_group_msg(
-                group_id=group_id,
-                message=Message(MessageSegment.text(f"Release file: {filename}")),
-            )
+
             # You may need to implement actual file sending if your bot supports it
         except Exception as e:
             logger.error(f"Failed to send release file {filename}: {e}")
+    if config.github_upload_remove_older_ver:
+        return
+        # Remove older versions if enabled
+        old_files = item[1].get("assets", [])
+        for filename in old_files:
+            try:
+                await bot.call_api(
+                    "delete_group_file",
+                )
+
+            except Exception as e:
+                logger.error(f"Failed to remove old release file {filename}: {e}")
 
 
 async def notify(

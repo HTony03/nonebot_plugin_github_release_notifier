@@ -1,8 +1,8 @@
 class Data:
     data = {}
-    
+
     @classmethod
-    def get(cls, key, default=None):
+    def get(cls, key, default=None) :# -> Any | None:
         """Get the value associated with the key."""
         return cls.data.get(key, default)
 

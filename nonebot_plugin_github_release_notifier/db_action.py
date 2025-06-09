@@ -191,17 +191,11 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
     # Get the correct column name
     column = column_mapping[config_type]
 
-    # Execute the update query
-    #logger.info(f"Updating group {group_id}, repo {repo}, "
-     #           f"setting {column} to {value}")
     cursor.execute(f"""
         UPDATE group_config
         SET {column}=?
         WHERE groupid=? AND repo=?
     """, (value, group_id, repo))
-
-    # Log the number of rows affected
-    #logger.info(f"Rows affected: {cursor.rowcount}")
 
     # Commit changes and close the connection
     conn.commit()

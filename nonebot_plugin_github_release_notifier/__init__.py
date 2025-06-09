@@ -52,10 +52,12 @@ if DEBUG:
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 
+
 # Initialize the database and load group configurations
 def pre_plugin_setup() -> None:
     """Pre-plugin setup to initialize the database."""
     init_database()
+
 
 pre_plugin_setup()
 

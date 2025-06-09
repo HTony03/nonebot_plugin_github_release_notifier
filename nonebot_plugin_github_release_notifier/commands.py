@@ -68,7 +68,7 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
         )
         logger.error(error_message)
         await bot.send(event, message=MessageSegment.text(error_message))
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         fatal_message = f"Fatal error while fetching GitHub API usage: {e}"
         logger.error(fatal_message)
         await bot.send(event, message=MessageSegment.text(fatal_message))
@@ -333,7 +333,7 @@ async def repo_info(
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo info <repo>")
         return
-    
+
     # TODO: usage limit per minute
 
     from .repo_activity import GITHUB_TOKEN
@@ -406,7 +406,7 @@ Last updated: {updated}''' + \
             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
         )
         logger.error(message)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         message = f"Fatal error while fetching GitHub repo usage: {e}"
         logger.error(message)
     await bot.send(event, message)
@@ -471,7 +471,7 @@ async def latest_release(
                 else:
                     message = MessageSegment.text(message)
                 await bot.send(event, message)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         await bot.send(event, f"Error fetching latest release: {e}")
 
 
@@ -515,5 +515,5 @@ async def latest_commit(
                     f"Message:\n{message_text}"
                 )
                 await bot.send(event, MessageSegment.text(message))
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         await bot.send(event, f"Error fetching latest commit: {e}")

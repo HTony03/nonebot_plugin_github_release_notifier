@@ -14,7 +14,7 @@ CACHE_DIR = store.get_plugin_cache_dir()
 logger.info(f"data folder ->  {DATA_DIR}")
 
 
-class Config(BaseModel): # pylint: disable=missing-class-docstring
+class Config(BaseModel):  # pylint: disable=missing-class-docstring
     github_token: str = ""
     """
     GitHub token for accessing the GitHub API.

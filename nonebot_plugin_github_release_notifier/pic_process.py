@@ -24,7 +24,7 @@ async def html_to_pic(html: str) -> bytes:
 
 async def md_to_pic(md_text: str) -> bytes:
     """
-    Converts the given markdown text into an image using the htmlrender plugin.
+    Converts the given Markdown text into an image.
 
     Args:
         md_text (str): The markdown content to be rendered into an image.

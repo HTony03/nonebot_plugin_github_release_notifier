@@ -21,7 +21,7 @@ async def markdown(
     bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ) -> None:
     """
-    Convert markdown text to image and send it.
+    Convert Markdown text to image and send it.
     """
     pic: bytes = await md_to_pic(args.extract_plain_text())
     await bot.send(event, MessageSegment.image(pic))
