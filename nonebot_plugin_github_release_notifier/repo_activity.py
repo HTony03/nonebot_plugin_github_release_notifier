@@ -6,7 +6,6 @@ import os
 
 import aiohttp
 from nonebot import get_bot, get_driver
-from nonebot.adapters.onebot.v11.message import Message
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot, Message
 
@@ -17,7 +16,8 @@ from .db_action import (
     load_group_configs,
     change_group_repo_cfg,
 )
-from .config import config
+from .config import config, CACHE_DIR
+from .data import Folder, File
 
 # pylint: disable=wrong-import-position
 from .pic_process import html_to_pic, md_to_pic
@@ -96,24 +96,26 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
     data_set.set("token", token)
     return
 
-async def notify_qq(bot:Bot, group_id:int=0, user_id:int=0, message:Message=Message(MessageSegment.text(''))) -> None:
+
+async def notify_qq(bot: Bot, group_id: int = 0, user_id: int = 0, message: Message | None = None) -> None:
     """
     Send a message to a QQ group or user.
     """
     if not group_id and not user_id:
         raise ValueError("Either group_id or user_id must be provided.")
+    if not message:
+        raise ValueError("Message cannot be None or empty.")
     try:
         if group_id:
             await bot.send_group_msg(group_id=group_id, message=message)
         elif user_id:
             await bot.send_private_msg(user_id=user_id, message=message)
-    except Exception as e: #pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         recipient = f'group {group_id}' if group_id else f'user {user_id}'
         logger.error(f'failed to send message to {recipient}: {e}')
 
 
-
-async def fetch_github_data(repo: str, endpoint: str) -> list | dict | None:
+async def fetch_github_data(repo: str, endpoint: str) -> list[dict,] | dict | None:
     """
     Fetch data from the GitHub API
     for a specific repo and endpoint.
@@ -210,39 +212,78 @@ def format_message(repo: str, item: dict, data_type: str, only_first_line: bool 
     ).format(**datas)
 
 
-async def send_release_files(bot: Bot, group_id: int, item: dict):
+async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
     """Send release assets to group if enabled."""
-    if not config.github_upload_file_when_release:
+    if not data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('send_release', False):
         return
 
     # check if the file folder exists
-    upload_folder = data_set.get('group_repo_dict',default={}).get(group_id,{}).get('release_folder',None)
+    upload_folder = data_set.get('group_repo_dict', default={}).get(group_id, {}).get('release_folder', None)
     folders = await bot.call_api(
         "get_group_root_files",
         group_id=group_id,
     )
-    if data_set.get('group_repo_dict',default={}).get(str(group_id), {}).get('send_release', False):
-        upload_folder = data_set.get('group_repo_dict',default={}).get(str(group_id), {}).get('release_folder', upload_folder)
-        if not folders.get('folders') or not upload_folder in folders.get('folders'):
+    if data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('send_release', False):
+        upload_folder = data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('release_folder', upload_folder)
+        if not folders.get('folders') or upload_folder not in folders.get('folders'):
             # If the folder does not exist, create it
-            await bot.call_api('create_group_file_folder',
-                         group_id=group_id,
-                         name=upload_folder,
-                         parent_id='/')
+            await bot.call_api(
+                'create_group_file_folder',
+                group_id=group_id,
+                name=upload_folder,
+                parent_id='/'
+            )
             call2 = await bot.call_api(
                 "get_group_root_files",
                 group_id=group_id,
             )
-            if not upload_folder in call2.get('folders', []):
+            if upload_folder not in call2.get('folders', []):
                 logger.error(f"Failed to create upload folder {upload_folder} in group {group_id}.")
                 logger.error('Auto upload to Root folder.')
                 upload_folder = None
     else:
         upload_folder = None
 
+    # remove older versions
+    if config.github_upload_remove_older_ver:
+        # Remove older versions if enabled
+        old_files = item[1].get("assets", [])
+        names = [asset.get("name") for asset in old_files]
+
+        folder = await bot.call_api(
+            "get_group_root_files",
+            group_id=group_id,
+        )
+        folers = [Folder(**f) for f in folder.get("folders", [])]
+        for f in folers:
+            if f.folder_name == upload_folder:
+                folder_id = f.folder_id
+                break
+        else:
+            folder_id = None
+        if folder_id:
+            files_in_folder: list = await bot.call_api(
+                'get_group_files_by_folder',
+                group_id=group_id,
+                folder_id=folder_id,
+            ).get("files", [])
+        else:
+            files_in_folder = folder.get("files", [])
+        files = [File(**f) for f in files_in_folder if f.get("name") in names]
+        for file in files:
+            try:
+                await bot.call_api(
+                    "delete_group_file",
+                    group_id=group_id,
+                    file_id=file.file_id,
+                    busid=file.busid,
+                )
+                logger.info(f"Removed old release file: {file.file_name}")
+            except Exception as e: # pylint: disable=broad-exception-caught
+                logger.error(f"Failed to remove old release file {file.file_name}: {e}")
+
+    # upload new versions
     assets = item[0].get("assets", [])
-    return
-    # TODO: rebase copilot lines
     for asset in assets:
         download_url = asset.get("browser_download_url")
         filename = asset.get("name")
@@ -257,6 +298,7 @@ async def send_release_files(bot: Bot, group_id: int, item: dict):
                     file_bytes = await resp.read()
                     with open(file_route, "wb") as f:
                         f.write(file_bytes)
+            # send file
             await bot.call_api(
                 "upload_group_file",
                 group_id=group_id,
@@ -264,22 +306,8 @@ async def send_release_files(bot: Bot, group_id: int, item: dict):
                 name=filename,
                 folder=upload_folder if upload_folder else None,
             )
-
-            # You may need to implement actual file sending if your bot supports it
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             logger.error(f"Failed to send release file {filename}: {e}")
-    if config.github_upload_remove_older_ver:
-        return
-        # Remove older versions if enabled
-        old_files = item[1].get("assets", [])
-        for filename in old_files:
-            try:
-                await bot.call_api(
-                    "delete_group_file",
-                )
-
-            except Exception as e:
-                logger.error(f"Failed to remove old release file {filename}: {e}")
 
 
 async def notify(
@@ -340,6 +368,7 @@ def reset_temp_disabled_configs() -> None:
     for key in to_reset:
         del temp_disabled[key]
 
+
 async def check_repo_updates() -> None:
     """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
     global api_cache
@@ -347,7 +376,7 @@ async def check_repo_updates() -> None:
     try:
         bot: Bot = get_bot()
         last_processed = load_last_processed()
-        group_repo_dict = data_set.get("group_repo_dict")
+        group_repo_dict: dict[int, dict[str, bool]] = data_set.get("group_repo_dict", {})
     # pylint: disable=broad-exception-caught
     except Exception:
         return
@@ -380,7 +409,7 @@ async def check_repo_updates() -> None:
                                     await notify_qq(
                                         bot, group_id=group_id, message=Message(
                                             MessageSegment.text(
-                                                data.get('falt','Unknown error') + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
+                                                data.get('falt', 'Unknown error') + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                             )
                                         )
                                     )

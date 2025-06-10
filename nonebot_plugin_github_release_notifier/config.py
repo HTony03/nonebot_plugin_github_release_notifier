@@ -78,7 +78,7 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
 
 
 try:
-    config = get_plugin_config(Config)
+    config: Config = get_plugin_config(Config)
 except (ValueError, TypeError) as e:
     logger.error(f"read config failed: {e}, using default config")
-    config = Config()
+    config: Config = Config()

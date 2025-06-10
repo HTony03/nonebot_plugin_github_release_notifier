@@ -22,6 +22,7 @@ async def html_to_pic(html: str) -> bytes:
         viewport={'width': 300, 'height': 10}
     )
 
+
 async def md_to_pic(md_text: str) -> bytes:
     """
     Converts the given Markdown text into an image.
@@ -33,7 +34,7 @@ async def md_to_pic(md_text: str) -> bytes:
         The generated image in bytes format.
         type: bytes
     """
-    md_text = md_text.replace("\n","\n\r\n")
+    md_text = md_text.replace("\n", "\n\r\n")
     from .config import CACHE_DIR as cache_dir
     with open(f"{cache_dir}/md_text.md", "w", encoding="utf-8") as f:
         f.write(md_text)
