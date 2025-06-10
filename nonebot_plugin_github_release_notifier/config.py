@@ -15,6 +15,8 @@ logger.info(f"data folder ->  {DATA_DIR}")
 
 
 class Config(BaseModel):  # pylint: disable=missing-class-docstring
+    github_dbg: bool = False # ignore when writing in the readme
+
     github_token: str = ""
     """
     GitHub token for accessing the GitHub API.

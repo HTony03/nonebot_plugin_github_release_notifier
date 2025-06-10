@@ -23,7 +23,7 @@ from .data import data_set
 from .debugs import debugs
 
 __version__ = "0.1.9.dev1"
-DEBUG = False
+DEBUG: bool = config.github_dbg
 
 __plugin_meta__ = PluginMetadata(
     name="github_release_notifier",
