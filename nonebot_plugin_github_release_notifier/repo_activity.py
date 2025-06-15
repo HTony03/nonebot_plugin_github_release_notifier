@@ -9,11 +9,9 @@ from nonebot import get_bot, get_driver
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment, Bot, Message
 
-
 from .db_action import (
     load_last_processed,
     save_last_processed,
-    load_group_configs,
     change_group_repo_cfg,
 )
 from .config import config, CACHE_DIR
@@ -68,16 +66,16 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    "https://api.github.com/user", headers=headers
+                        "https://api.github.com/user", headers=headers
                 ) as response:
                     if response.status == 200:
                         logger.info("GitHub token is valid.")
                         return
                     logger.error(
-                                f"GitHub token validation failed: "
-                                f"{response.status} - "
-                                f"{await response.text()}"
-                                )
+                        f"GitHub token validation failed: "
+                        f"{response.status} - "
+                        f"{await response.text()}"
+                    )
                     token = None
                     data_set.set("token", token)
                     return
@@ -212,19 +210,18 @@ def format_message(repo: str, item: dict, data_type: str, only_first_line: bool 
     ).format(**datas)
 
 
-async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
+async def send_release_files(bot: Bot, group_id: int, item: list[dict], debugging=False) -> None:
     """Send release assets to group if enabled."""
-    if not data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('send_release', False):
+    if not data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('send_release',
+                                                                                  False) and not debugging:
         return
 
     # check if the file folder exists
-    upload_folder = data_set.get('group_repo_dict', default={}).get(group_id, {}).get('release_folder', None)
     folders = await bot.call_api(
         "get_group_root_files",
         group_id=group_id,
     )
-    if data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('send_release', False):
-        upload_folder = data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('release_folder', upload_folder)
+    if upload_folder := data_set.get('group_repo_dict', default={}).get(str(group_id), {}).get('release_folder', False):
         if not folders.get('folders') or upload_folder not in folders.get('folders'):
             # If the folder does not exist, create it
             await bot.call_api(
@@ -241,8 +238,6 @@ async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
                 logger.error(f"Failed to create upload folder {upload_folder} in group {group_id}.")
                 logger.error('Auto upload to Root folder.')
                 upload_folder = None
-    else:
-        upload_folder = None
 
     # remove older versions
     if config.github_upload_remove_older_ver:
@@ -262,11 +257,11 @@ async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
         else:
             folder_id = None
         if folder_id:
-            files_in_folder: list = await bot.call_api(
+            files_in_folder: list = (await bot.call_api(
                 'get_group_files_by_folder',
                 group_id=group_id,
                 folder_id=folder_id,
-            ).get("files", [])
+            )).get("files", [])
         else:
             files_in_folder = folder.get("files", [])
         files = [File(**f) for f in files_in_folder if f.get("name") in names]
@@ -279,7 +274,7 @@ async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
                     busid=file.busid,
                 )
                 logger.info(f"Removed old release file: {file.file_name}")
-            except Exception as e: # pylint: disable=broad-exception-caught
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"Failed to remove old release file {file.file_name}: {e}")
 
     # upload new versions
@@ -298,6 +293,7 @@ async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
                     file_bytes = await resp.read()
                     with open(file_route, "wb") as f:
                         f.write(file_bytes)
+                    logger.info(file_route + " downloaded successfully.")
             # send file
             await bot.call_api(
                 "upload_group_file",
@@ -306,17 +302,17 @@ async def send_release_files(bot: Bot, group_id: int, item: list[dict]) -> None:
                 name=filename,
                 folder=upload_folder if upload_folder else None,
             )
-        except Exception as e: # pylint: disable=broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"Failed to send release file {filename}: {e}")
 
 
 async def notify(
-    bot: Bot,
-    group_id: int,
-    repo: str,
-    data: list,
-    data_type: str,
-    last_processed: dict,
+        bot: Bot,
+        group_id: int,
+        repo: str,
+        data: list,
+        data_type: str,
+        last_processed: dict,
 ) -> None:
     """Send notifications for new data (commits, issues, PRs, releases)."""
     latest_data: list = data[:3]
@@ -341,7 +337,8 @@ async def notify(
                     markdown_text: str = item.get('details', 'No details provided.')
                     splited: list[str] = message.split(markdown_text)
                     pic = await md_to_pic(markdown_text)
-                    msg_all = MessageSegment.text(splited[0]) + MessageSegment.image(pic) + MessageSegment.text(splited[1])
+                    msg_all = MessageSegment.text(splited[0]) + MessageSegment.image(pic) + MessageSegment.text(
+                        splited[1])
                 else:
                     msg_all = MessageSegment.text(message)
                 await bot.send_group_msg(group_id=group_id, message=Message(msg_all))
@@ -351,9 +348,9 @@ async def notify(
     # Update last processed
     if latest_data:
         last_processed.setdefault(repo, {})[data_type] = (
-            latest_data[0].get("created_at")
-            or latest_data[0].get("published_at")
-            or latest_data[0].get("commit", {}).get("author", {}).get("date")
+                latest_data[0].get("created_at")
+                or latest_data[0].get("published_at")
+                or latest_data[0].get("commit", {}).get("author", {}).get("date")
         )
 
 
@@ -376,9 +373,8 @@ async def check_repo_updates() -> None:
     try:
         bot: Bot = get_bot()
         last_processed = load_last_processed()
-        group_repo_dict: dict[int, dict[str, bool]] = data_set.get("group_repo_dict", {})
-    # pylint: disable=broad-exception-caught
-    except Exception:
+        group_repo_dict: dict[int, list[dict[str, str | bool]]] = data_set.get("group_repo_dict", {})
+    except Exception:  # pylint: disable=broad-exception-caught
         return
 
     # Reset disables at the start of each hour
@@ -388,7 +384,8 @@ async def check_repo_updates() -> None:
         group_id = int(group_id)
         for repo_config in repo_configs:
             repo = repo_config["repo"]
-            for data_type, endpoint in [("commit", "commits"), ("issue", "issues"), ("pull_req", "pulls"), ("release", "releases")]:
+            for data_type, endpoint in [("commit", "commits"), ("issue", "issues"), ("pull_req", "pulls"),
+                                        ("release", "releases")]:
                 if repo_config.get(data_type, False) and not temp_disabled.get((group_id, repo, data_type)):
                     # Fetch data (use cache if available)
                     data = await fetch_github_data(repo, endpoint)
@@ -409,7 +406,8 @@ async def check_repo_updates() -> None:
                                     await notify_qq(
                                         bot, group_id=group_id, message=Message(
                                             MessageSegment.text(
-                                                data.get('falt', 'Unknown error') + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
+                                                data.get('falt',
+                                                         'Unknown error') + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                             )
                                         )
                                     )
@@ -417,9 +415,9 @@ async def check_repo_updates() -> None:
                                     html = '<p>GitHub API Error:</p>'
                                     html += "".join(
                                         (
-                                            "<p style='white-space=pre-wrap'>"
-                                            + x.replace("\n", "<br>")
-                                            + "</p>"
+                                                "<p style='white-space=pre-wrap'>"
+                                                + x.replace("\n", "<br>")
+                                                + "</p>"
                                         )
                                         for x in data["errors"]
                                     )
@@ -430,17 +428,18 @@ async def check_repo_updates() -> None:
                             # pylint: disable=broad-exception-caught
                             except Exception as e:
                                 logger.error(
-                                        f"Failed to notify group {group_id} "
-                                        f"about the error: {e}"
+                                    f"Failed to notify group {group_id} "
+                                    f"about the error: {e}"
                                 )
                         if config.github_send_faliure_superuser:
                             for users in superusers:
                                 try:
                                     if any('403' in x for x in data["errors"]):
                                         await notify_qq(
-                                            bot, user_id=users, message=Message(
+                                            bot, user_id=int(users), message=Message(
                                                 MessageSegment.text(
-                                                    data['falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
+                                                    data[
+                                                        'falt'] + "\nGitHub API rate limit exceeded.\nProbably caused by invalid / no token."
                                                 )
                                             )
                                         )
@@ -454,7 +453,7 @@ async def check_repo_updates() -> None:
                                         )
                                         pic = await html_to_pic(html)
                                         await notify_qq(
-                                            bot, user_id=users, message=Message(
+                                            bot, user_id=int(users), message=Message(
                                                 MessageSegment.image(pic)
                                             )
                                         )
@@ -466,9 +465,9 @@ async def check_repo_updates() -> None:
                                         f"{e}"
                                     )
                         if (
-                            config.github_disable_when_fail
-                            and any('SSL' in x for x in data["errors"])
-                            and any('403' in x for x in data["errors"])
+                                config.github_disable_when_fail
+                                and any('SSL' in x for x in data["errors"])
+                                and any('403' in x for x in data["errors"])
                         ):
                             repo_config[data_type] = False
                             change_group_repo_cfg(
@@ -480,6 +479,7 @@ async def check_repo_updates() -> None:
                                 f"Temporarily disabling {data_type} notifications "
                                 f"for {repo} in group {group_id} due to rate limit."
                             )
-                            temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+                            temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0,
+                                                                                                   microsecond=0)
 
     save_last_processed(last_processed)

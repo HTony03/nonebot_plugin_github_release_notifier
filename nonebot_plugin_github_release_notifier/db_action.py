@@ -106,7 +106,7 @@ def load_group_configs(fast=True) -> dict:
     # Convert rows to a dictionary
     group_data = {}
     for row in rows:
-        groupid, repo, commits, prs, issues, releases, send_folder, send_release= row
+        groupid, repo, commits, prs, issues, releases, send_folder, send_release = row
         if groupid not in group_data:
             data = []
         else:
@@ -125,14 +125,14 @@ def load_group_configs(fast=True) -> dict:
 
 
 def add_group_repo_data(
-    group_id: int | str,
-    repo: str,
-    commits: bool = False,
-    issues: bool = False,
-    prs: bool = False,
-    releases: bool = False,
-    release_folder: str | None = None,
-    send_release: bool = False
+        group_id: int | str,
+        repo: str,
+        commits: bool = False,
+        issues: bool = False,
+        prs: bool = False,
+        releases: bool = False,
+        release_folder: str | None = None,
+        send_release: bool = False
 ) -> None:
     """Add or update a group's repository
     configuration in the SQLite database."""

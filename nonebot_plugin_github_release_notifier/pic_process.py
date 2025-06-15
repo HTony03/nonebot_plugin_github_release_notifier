@@ -10,7 +10,7 @@ async def html_to_pic(html: str) -> bytes:
     Converts the given text into an image using the htmlrender plugin.
 
     Args:
-        text (str): The HTML content to be rendered into an image.
+        html (str): The HTML content to be rendered into an image.
 
     Returns:
         The generated image in bytes format.
@@ -35,9 +35,9 @@ async def md_to_pic(md_text: str) -> bytes:
         type: bytes
     """
     md_text = md_text.replace("\n", "\n\r\n")
-    from .config import CACHE_DIR as cache_dir
-    with open(f"{cache_dir}/md_text.md", "w", encoding="utf-8") as f:
+    from .config import CACHE_DIR
+    with open(f"{CACHE_DIR}/md_text.md", "w", encoding="utf-8") as f:
         f.write(md_text)
 
     return await htmlrender.md_to_pic(md=md_text
-    )
+                                      )

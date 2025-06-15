@@ -99,7 +99,7 @@ repo_group = CommandGroup(
 ).handle()
 @repo_group.command("add").handle()
 async def add_repo(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Add a new repository mapping."""
     command_args = args.extract_plain_text().split()
@@ -141,7 +141,7 @@ async def add_repo(
 @repo_group.command("delete").handle()
 @repo_group.command("del").handle()
 async def delete_repo(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Delete a repository mapping."""
     command_args = args.extract_plain_text().split()
@@ -164,7 +164,7 @@ async def delete_repo(
 
     groups_repo = load_group_configs()
     if group_id not in groups_repo or repo not in map(
-        lambda x: x["repo"], groups_repo[group_id]
+            lambda x: x["repo"], groups_repo[group_id]
     ):
         await bot.send(
             event, f"Repository {repo} not found in group {group_id}."
@@ -186,7 +186,7 @@ async def delete_repo(
 @repo_group.command("config").handle()
 @repo_group.command('cfg').handle()
 async def change_repo(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Change repository configuration."""
     command_args = args.extract_plain_text().split()
@@ -220,7 +220,7 @@ async def change_repo(
 
     groups_repo = load_group_configs()
     if group_id not in groups_repo or repo not in map(
-        lambda x: x["repo"], groups_repo[group_id]
+            lambda x: x["repo"], groups_repo[group_id]
     ):
         await bot.send(
             event, f"Repository {repo} not found in group {group_id}."
@@ -326,15 +326,13 @@ async def refresh_repo(bot: Bot, event: MessageEvent):
     aliases={'repo.info'}
 ).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def repo_info(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Show repository information."""
     command_args = args.extract_plain_text().split()
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo info <repo>")
         return
-
-    # TODO: usage limit per minute
 
     from .repo_activity import GITHUB_TOKEN
     repo = link_to_repo_name(command_args[0])
@@ -392,15 +390,15 @@ Issue count: {issue_count}
 Repo statics & status
 Created time: {created}
 Last updated: {updated}''' + \
-                    ('The repo is a template\n' if is_template else '') + \
-                    ('The repo is private repo\n' if is_private else '') + \
-                    ('' if allow_fork else 'The repo does not allow forks\n') + \
-                    ('The repo is a fork\n' if is_fork else '') + \
-                    ('The repo is archived\n' if is_archived else '')
+                          ('The repo is a template\n' if is_template else '') + \
+                          ('The repo is private repo\n' if is_private else '') + \
+                          ('' if allow_fork else 'The repo does not allow forks\n') + \
+                          ('The repo is a fork\n' if is_fork else '') + \
+                          ('The repo is archived\n' if is_archived else '')
 
                 re_text = message.replace('\n', '<br />')
                 message = MessageSegment.image(
-                        await html_to_pic(f'<p>{re_text}</p>'))
+                    await html_to_pic(f'<p>{re_text}</p>'))
     except aiohttp.ClientResponseError as e:
         message = (
             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
@@ -412,9 +410,10 @@ Last updated: {updated}''' + \
     await bot.send(event, message)
 
 
-@on_command("latest_release", aliases={"repo_release", "get_release"}).handle(parameterless=[Cooldown(15, prompt="调用过快")])
+@on_command("latest_release", aliases={"repo_release", "get_release"}).handle(
+    parameterless=[Cooldown(15, prompt="调用过快")])
 async def latest_release(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Get the latest release of a repository."""
     command_args = args.extract_plain_text().split()
@@ -475,9 +474,10 @@ async def latest_release(
         await bot.send(event, f"Error fetching latest release: {e}")
 
 
-@on_command("latest_commit", aliases={"repo_commit", "get_commit"}).handle(parameterless=[Cooldown(15, prompt="调用过快")])
+@on_command("latest_commit", aliases={"repo_commit", "get_commit"}).handle(
+    parameterless=[Cooldown(15, prompt="调用过快")])
 async def latest_commit(
-    bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Get the latest commit of a repository."""
     command_args = args.extract_plain_text().split()
