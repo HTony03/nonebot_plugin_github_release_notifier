@@ -12,7 +12,7 @@ from nonebot.internal.driver.abstract import Driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 from .repo_activity import check_repo_updates
-from .setup import post_plugin_setup
+from .setup import pre_plugin_setup, post_plugin_setup
 from .db_action import (
     init_database,
     load_group_configs
@@ -33,7 +33,7 @@ __plugin_meta__ = PluginMetadata(
         "issues, and PRs in GitHub repos."
     ),
     type='application',
-    usage="github repo events auto forward|自动转发github repo事件",
+    usage="github repo events auto forward | 自动转发github repo事件",
     homepage=(
         "https://github.com/HTony03/nonebot_plugin_github_release_notifier"
     ),
@@ -51,12 +51,6 @@ if DEBUG:
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
-
-
-# Initialize the database and load group configurations
-def pre_plugin_setup() -> None:
-    """Pre-plugin setup to initialize the database."""
-    init_database()
 
 
 pre_plugin_setup()

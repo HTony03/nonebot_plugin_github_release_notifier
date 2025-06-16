@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-from datetime import datetime
+from datetime import datetime, timezone
 import ssl
 import asyncio
 import os
@@ -356,7 +356,7 @@ async def notify(
 
 def reset_temp_disabled_configs() -> None:
     """Reset configs to True if a new hour has started."""
-    current_hour = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    current_hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
     to_reset = []
     for key, hour in temp_disabled.items():
         if hour < current_hour:

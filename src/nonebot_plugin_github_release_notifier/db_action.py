@@ -142,7 +142,7 @@ def add_group_repo_data(
 
     cursor.execute("""
         INSERT INTO group_config (groupid, repo, commits,
-issues, prs, releases)
+issues, prs, releases, release_folder, send_release)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(groupid, repo) DO UPDATE SET
             commits=excluded.commits,

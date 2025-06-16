@@ -124,7 +124,9 @@ async def add_repo(
                         config.github_default_config_setting,
                         config.github_default_config_setting,
                         config.github_default_config_setting,
-                        config.github_default_config_setting)
+                        config.github_default_config_setting,
+                        None,
+                        config.github_default_config_setting,)
     from . import (
         refresh_data_from_db,
     )
