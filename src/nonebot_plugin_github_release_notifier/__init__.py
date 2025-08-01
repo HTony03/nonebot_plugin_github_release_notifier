@@ -22,7 +22,7 @@ from .config import Config, config
 from .data import data_set
 from .debugs import debugs
 
-__version__ = "0.1.9.dev1"
+__version__ = "0.1.7.dev1"
 DEBUG: bool = config.github_dbg
 
 __plugin_meta__ = PluginMetadata(
@@ -51,7 +51,6 @@ if DEBUG:
 
 # Scheduler for periodic tasks
 scheduler = require("nonebot_plugin_apscheduler").scheduler
-
 
 pre_plugin_setup()
 

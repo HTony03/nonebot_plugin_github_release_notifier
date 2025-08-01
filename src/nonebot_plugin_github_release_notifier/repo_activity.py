@@ -479,7 +479,8 @@ async def check_repo_updates() -> None:
                                 f"Temporarily disabling {data_type} notifications "
                                 f"for {repo} in group {group_id} due to rate limit."
                             )
-                            temp_disabled[(group_id, repo, data_type)] = datetime.utcnow().replace(minute=0, second=0,
-                                                                                                   microsecond=0)
+                            temp_disabled[(group_id, repo, data_type)] = datetime.now(timezone.utc).replace(minute=0,
+                                                                                                            second=0,
+                                                                                                            microsecond=0)
 
     save_last_processed(last_processed)

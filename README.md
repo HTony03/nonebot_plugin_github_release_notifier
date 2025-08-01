@@ -1,15 +1,9 @@
-<p align="center">
-  <a href="https://v2.nonebot.dev/store">
-    <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo">
-  </a>
-</p>
-<p align="center">
-  <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText">
-</p>
+<div align="center">
+    <a href="https://v2.nonebot.dev/store">
+    <img src="https://raw.githubusercontent.com/fllesser/nonebot-plugin-template/refs/heads/resource/.docs/NoneBotPlugin.svg" width="310" alt="logo"></a>
 
-<p align="center">
   <em>✨ NoneBot GitHub Release Notifier ✨</em>
-</p>
+</div>
 
 <p align="center">
   <a href="./LICENSE">
@@ -215,3 +209,7 @@ github_sending_templates='
 `V0.1.2` 修改发布信息
 
 `V0.1.0`-`V0.1.1` 主程序完成，功能适配， 准备发布
+
+#### 免责申明（叠甲（bushi））
+插件**部分**代码来自/启发自 [`cscs181/QQ-GitHub-Bot`](https://github.com/cscs181/QQ-GitHub-Bot)，以MIT协议传播，详细可见 [此处](https://github.com/cscs181/QQ-GitHub-Bot/blob/master/LICENSE)。
+

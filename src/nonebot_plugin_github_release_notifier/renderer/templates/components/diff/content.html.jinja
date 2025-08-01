@@ -1,0 +1,37 @@
+<!--
+ * @Author         : yanyongyu
+ * @Date           : 2022-10-04 03:51:10
+ * @LastEditors    : yanyongyu
+ * @LastEditTime   : 2024-05-23 17:38:22
+ * @Description    : None
+ * @GitHub         : https://github.com/yanyongyu
+-->
+
+{% from "components/diff/hunk.html.jinja" import diff_hunk %}
+
+{#
+file: PatchedFile
+#}
+{% macro diff_content(file) %}
+<div class="position-relative">
+  <div class="data highlight overflow-x-auto">
+    {% if file.is_removed_file %}
+    <div class="px-2 py-1">This file was deleted.</div>
+    {% elif file.is_binary_file %}
+    <div class="px-2 py-1">This file is a binary file.</div>
+    {% elif (file.added + file.removed) > 200 %}
+    <div class="px-2 py-1">Large diffs are not rendered.</div>
+    {% elif file|length %}
+    <table class="width-full tab-size">
+      <tbody>
+        {% for hunk in file %}
+        {{ diff_hunk(hunk) }}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif file.is_rename %}
+    <div class="px-2 py-1">File renamed without changes.</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}

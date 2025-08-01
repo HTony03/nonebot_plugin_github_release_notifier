@@ -1,0 +1,52 @@
+<!--
+ * @Author         : yanyongyu
+ * @Date           : 2022-10-01 09:27:26
+ * @LastEditors    : yanyongyu
+ * @LastEditTime   : 2024-05-16 16:07:08
+ * @Description    : None
+ * @GitHub         : https://github.com/yanyongyu
+-->
+
+{% from "icons/chevron-down.html.jinja" import octicon_chevron_down %}
+{% from "components/diff/stat.html.jinja" import diff_stat %}
+
+{#
+file: PatchedFile
+#}
+{% macro diff_header(file) %}
+<div class="
+    d-flex
+    flex-md-row flex-column
+    flex-md-items-center
+    px-2 py-1
+    color-bg-subtle
+    border-bottom
+    color-border-default
+    rounded-top-2
+  ">
+  <div
+    class="f6 flex-auto min-width-0 mb-md-0 mb-2 text-mono"
+    style="line-height: 32px"
+  >
+    <button
+      class="btn-octicon"
+      style="width: 22px"
+    >
+      {{ octicon_chevron_down() }}
+    </button>
+    {{ diff_stat(file) }}
+    <span class="Truncate">
+      {% if file.is_rename %}
+      {{ file.source_file.removeprefix("a/")|left_truncate(40) }}
+      →
+      {{ file.target_file.removeprefix("b/")|left_truncate(40) }}
+      {% else %}
+      <a
+        href="#"
+        class="Link--primary Truncate-text"
+      >{{ file.path|escape }}</a>
+      {% endif %}
+    </span>
+  </div>
+</div>
+{% endmacro %}

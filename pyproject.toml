@@ -26,7 +26,8 @@ dependencies = [
     "nonebot-plugin-apscheduler~=0.3",
     "nonebot-plugin-localstore~=0.7",
     "nonebot-plugin-htmlrender~=0.5",
-    "nonebot2~=2.3"
+    "nonebot2~=2.3",
+    "packaging~=25.0",
 ]
 
 [project.urls]
@@ -39,6 +40,8 @@ issue = "https://github.com/HTony03/nonebot_plugin_github_release_notifier/issue
 dev = [
     "nonebot2[fastapi]>=2.4.2,<3.0.0",
     "ruff>=0.11.6,<1.0.0",
+    "flake8>=6.0.0,<7.0.0",
+    "pydantic>=2.7.0,<3.0.0",
     # "nonemoji>=0.1.4,<1.0.0", # 推荐全局安装 pipx install nonemoji
     # "pre-commit>=4.1.0",      # 推荐全局安装 pipx install pre-commit
 ]

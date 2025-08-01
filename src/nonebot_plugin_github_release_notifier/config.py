@@ -15,7 +15,7 @@ logger.info(f"data folder ->  {DATA_DIR}")
 
 
 class Config(BaseModel):  # pylint: disable=missing-class-docstring
-    github_dbg: bool = False # ignore when writing in the readme
+    github_dbg: bool = False  # ignore when writing in the readme
 
     github_token: str = ""
     """
@@ -74,7 +74,6 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     - issue
     - release
     """
-    github_send_in_markdown: bool = False
 
     github_upload_remove_older_ver: bool = True
 

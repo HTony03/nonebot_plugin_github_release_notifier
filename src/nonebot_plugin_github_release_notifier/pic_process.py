@@ -39,5 +39,4 @@ async def md_to_pic(md_text: str) -> bytes:
     with open(f"{CACHE_DIR}/md_text.md", "w", encoding="utf-8") as f:
         f.write(md_text)
 
-    return await htmlrender.md_to_pic(md=md_text
-                                      )
+    return await htmlrender.md_to_pic(md=md_text)

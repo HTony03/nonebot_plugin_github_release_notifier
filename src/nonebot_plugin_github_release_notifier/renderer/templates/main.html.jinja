@@ -1,0 +1,81 @@
+<!--
+ * @Author         : yanyongyu
+ * @Date           : 2022-09-15 03:56:36
+ * @LastEditors    : yanyongyu
+ * @LastEditTime   : 2024-08-04 12:38:49
+ * @Description    : None
+ * @GitHub         : https://github.com/yanyongyu
+-->
+
+<html
+  data-color-mode="{{ theme|default('light', true) }}"
+  data-light-theme="light"
+  data-dark-theme="dark_dimmed"
+>
+
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="dns-prefetch"
+      href="https://github.githubassets.com"
+    />
+    <link
+      rel="dns-prefetch"
+      href="https://avatars.githubusercontent.com"
+    />
+    <link
+      rel="dns-prefetch"
+      href="https://github-cloud.s3.amazonaws.com"
+    />
+    <link
+      rel="dns-prefetch"
+      href="https://user-images.githubusercontent.com/"
+    />
+    <link
+      rel="preconnect"
+      href="https://github.githubassets.com"
+      crossorigin=""
+    />
+    <link
+      rel="preconnect"
+      href="https://avatars.githubusercontent.com"
+    />
+    <link
+      href="https://unpkg.com/@primer/css@^21.3.5/dist/primer.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    {% if theme|default("light", true) == "light" %}
+    <link
+      href="https://cdn.jsdelivr.net/npm/github-syntax-light@^0.5.0/lib/github-light.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    {% else %}
+    <link
+      href="https://cdn.jsdelivr.net/npm/github-syntax-dark@^0.5.0/lib/github-dark.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    {% endif %}
+    <style>
+      {% include "main.css" %}
+    </style>
+    <meta
+      name="viewport"
+      content="width=device-width"
+    />
+  </head>
+
+  <body style="word-wrap: break-word;">
+    <div class="application-main">
+      <div>
+        <main>
+          {% block main required %}
+          {% endblock %}
+        </main>
+      </div>
+    </div>
+  </body>
+
+</html>

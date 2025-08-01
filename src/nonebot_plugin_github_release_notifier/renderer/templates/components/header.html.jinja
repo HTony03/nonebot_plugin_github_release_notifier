@@ -1,0 +1,111 @@
+<!--
+ * @Author         : yanyongyu
+ * @Date           : 2022-09-15 16:07:21
+ * @LastEditors    : yanyongyu
+ * @LastEditTime   : 2024-05-16 15:56:43
+ * @Description    : None
+ * @GitHub         : https://github.com/yanyongyu
+-->
+
+{% from "icons/repo.html.jinja" import octicon_repo %}
+{% from "icons/lock.html.jinja" import octicon_lock %}
+{% from "icons/star.html.jinja" import octicon_star %}
+{% from "icons/repo-forked.html.jinja" import octicon_repo_forked %}
+{% from "icons/repo-template.html.jinja" import octicon_repo_template %}
+
+{#
+owner: str
+name: str
+private: bool
+fork: bool
+is_template: bool
+parent_full_name: str | None
+template_full_name: str | None
+forks_count: int
+stargazers_count: int
+#}
+{% macro header(
+owner, name, private, fork, is_template, parent_full_name, template_full_name, forks_count, stargazers_count
+) %}
+<div class="pt-3 pb-3 color-bg-subtle">
+  <div
+    class="
+      d-flex
+      flex-wrap flex-justify-end
+      px-3 px-md-4 px-lg-5
+    "
+    style="gap: 1rem;"
+  >
+    <div class="flex-auto min-width-0 width-fit mr-3">
+      <div class="d-flex flex-wrap flex-items-center wb-break-word f3 text-normal">
+        {% if private %}
+        {{ octicon_lock(16, "color-fg-muted mr-2") }}
+        {% elif is_template %}
+        {{ octicon_repo_template(16, "color-fg-muted mr-2") }}
+        {% elif fork %}
+        {{ octicon_repo_forked(16, "color-fg-muted mr-2") }}
+        {% else %}
+        {{ octicon_repo(16, "color-fg-muted mr-2") }}
+        {% endif %}
+        <span class="author flex-self-stretch">
+          <a href="#">
+            {{ owner|escape }}
+          </a>
+        </span>
+        <span class="mx-1 flex-self-stretch color-fg-muted">/</span>
+        <strong class="mr-2 flex-self-stretch">
+          <a href="#">
+            {{ name|escape }}
+          </a>
+        </strong>
+        <span class="Label Label--secondary v-align-middle mr-1">
+          {% if private %}
+          Private
+          {% else %}
+          Public
+          {% endif %}
+          {% if is_template %}
+          template
+          {% endif %}
+        </span>
+      </div>
+      {% if parent_full_name %}
+      <span class="text-small no-wrap mt-1 color-fg-muted">
+        forked from
+        <a href="#">{{ parent_full_name|escape }}</a>
+      </span>
+      {% elif template_full_name %}
+      <span class="text-small no-wrap mt-1 color-fg-muted">
+        generated from
+        <a href="#">{{ template_full_name|escape }}</a>
+      </span>
+      {% endif %}
+    </div>
+    <ul
+      class="flex-shrink-0 d-none d-md-inline list-style-none"
+      style="padding: 2px 0;"
+    >
+      <li class="float-left mr-2 f6 color-fg-default">
+        <a
+          href="#"
+          class="tooltipped tooltipped-s btn-sm btn"
+        >
+          {{ octicon_repo_forked(16, "mr-2") }}
+          Fork
+          <span class="Counter">{{ forks_count }}</span>
+        </a>
+      </li>
+      <li class="float-left mr-2 f6 color-fg-default">
+        <a
+          href="#"
+          class="tooltipped tooltipped-s btn-sm btn"
+        >
+          {{ octicon_star(16, "mr-2") }}
+          Star
+          <span class="Counter">{{ stargazers_count }}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endmacro %}

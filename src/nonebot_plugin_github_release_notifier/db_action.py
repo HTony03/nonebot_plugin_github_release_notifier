@@ -23,7 +23,7 @@ def init_database() -> None:
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS group_config (
-            groupid TEXT,
+            group_id TEXT,
             repo TEXT,
             commits BOOLEAN,
             issues BOOLEAN,
@@ -31,9 +31,10 @@ def init_database() -> None:
             releases BOOLEAN,
             release_folder TEXT,
             send_release BOOLEAN,
-            PRIMARY KEY (groupid, repo)
+            PRIMARY KEY (group_id, repo)
         )
     """)
+    cursor.execute('ALTER TABLE group_config RENAME COLUMN groupid TO group_id;')
     # Check if 'release_folder' column exists, add if not
     cursor.execute("PRAGMA table_info(group_config)")
     columns = [row[1] for row in cursor.fetchall()]
@@ -106,11 +107,11 @@ def load_group_configs(fast=True) -> dict:
     # Convert rows to a dictionary
     group_data = {}
     for row in rows:
-        groupid, repo, commits, prs, issues, releases, send_folder, send_release = row
-        if groupid not in group_data:
+        group_id, repo, commits, prs, issues, releases, send_folder, send_release = row
+        if group_id not in group_data:
             data = []
         else:
-            data: list = group_data[groupid]
+            data: list = group_data[group_id]
         data.append({
             "repo": repo,
             "commit": commits if commits else False,
@@ -120,7 +121,7 @@ def load_group_configs(fast=True) -> dict:
             "send_release": send_release if send_release else False,
             "release_folder": send_folder if send_folder else None,
         })
-        group_data[groupid] = data
+        group_data[group_id] = data
     return group_data
 
 
@@ -141,10 +142,10 @@ def add_group_repo_data(
     group_id = int(group_id)
 
     cursor.execute("""
-        INSERT INTO group_config (groupid, repo, commits,
+        INSERT INTO group_config (group_id, repo, commits,
 issues, prs, releases, release_folder, send_release)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(groupid, repo) DO UPDATE SET
+        ON CONFLICT(group_id, repo) DO UPDATE SET
             commits=excluded.commits,
             issues=excluded.issues,
             prs=excluded.prs,
@@ -194,7 +195,7 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
     cursor.execute(f"""
         UPDATE group_config
         SET {column}=?
-        WHERE groupid=? AND repo=?
+        WHERE group_id=? AND repo=?
     """, (value, group_id, repo))
 
     # Commit changes and close the connection
@@ -209,7 +210,7 @@ def remove_group_repo_data(group_id: int | str, repo: str) -> None:
     group_id = int(group_id)
     cursor.execute("""
         DELETE FROM group_config
-        WHERE groupid=? AND repo=?
+        WHERE group_id=? AND repo=?
     """, (group_id, repo))
 
     conn.commit()

@@ -1,0 +1,45 @@
+<!--
+ * @Author         : yanyongyu
+ * @Date           : 2022-09-16 16:42:19
+ * @LastEditors    : yanyongyu
+ * @LastEditTime   : 2024-05-14 21:11:11
+ * @Description    : None
+ * @GitHub         : https://github.com/yanyongyu
+-->
+
+{% from "icons/pr.html.jinja" import octicon_pr %}
+{% from "icons/pr-closed.html.jinja" import octicon_pr_closed %}
+{% from "icons/pr-draft.html.jinja" import octicon_pr_draft %}
+{% from "icons/pr-merged.html.jinja" import octicon_pr_merged %}
+
+{#
+state: str
+merged: bool
+draft: bool
+class: str
+#}
+{% macro pr_state(state, merged, draft, class="") %}
+<div class="{{ class }}">
+  {% if merged %}
+  {% set color = "merged" %}
+  {% elif state == "closed" %}
+  {% set color = "closed" %}
+  {% elif draft %}
+  {% set color = "draft" %}
+  {% else %}
+  {% set color = "open" %}
+  {% endif %}
+
+  <span class="State State--{{ color }} mr-2">
+    {% if merged %}
+    {{ octicon_pr_merged() }} Merged
+    {% elif state == "closed" %}
+    {{ octicon_pr_closed() }} Closed
+    {% elif draft %}
+    {{ octicon_pr_draft() }} Draft
+    {% else %}
+    {{ octicon_pr() }} Open
+    {% endif %}
+  </span>
+</div>
+{% endmacro %}
