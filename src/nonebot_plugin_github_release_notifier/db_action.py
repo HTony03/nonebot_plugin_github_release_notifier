@@ -34,14 +34,14 @@ def init_database() -> None:
             PRIMARY KEY (group_id, repo)
         )
     """)
-    cursor.execute('ALTER TABLE group_config RENAME COLUMN groupid TO group_id;')
-    # Check if 'release_folder' column exists, add if not
     cursor.execute("PRAGMA table_info(group_config)")
     columns = [row[1] for row in cursor.fetchall()]
     if "release_folder" not in columns:
         cursor.execute("ALTER TABLE group_config ADD COLUMN release_folder TEXT")
     if "send_release" not in columns:
         cursor.execute("ALTER TABLE group_config ADD COLUMN send_release BOOLEAN")
+    if "groupid" in columns:
+        cursor.execute('ALTER TABLE group_config RENAME COLUMN groupid TO group_id;')
     conn.commit()
     conn.close()
 

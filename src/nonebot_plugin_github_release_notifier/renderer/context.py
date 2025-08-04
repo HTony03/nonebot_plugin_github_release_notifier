@@ -122,47 +122,6 @@ class IssueInfo:
             ),
         )
 
-    @classmethod
-    def from_webhook(
-        cls,
-        issue: (
-            models.WebhookIssuesOpenedPropIssue
-            | models.WebhookIssuesClosedPropIssue
-            | models.WebhookIssueCommentCreatedPropIssue
-            | models.WebhookIssueCommentEditedPropIssue
-        ),
-    ) -> Self:
-        if issue.state:
-            state = issue.state
-        elif isinstance(issue, models.WebhookIssuesOpenedPropIssue):
-            state = "open"
-        elif isinstance(issue, models.WebhookIssuesClosedPropIssue):
-            state = "closed"
-        else:
-            state = issue.state
-
-        return cls(
-            number=issue.number,
-            title=issue.title,
-            state=state,
-            state_reason=issue.state_reason if issue.state_reason else None,
-            draft=bool(issue.draft),
-            user=issue.user.login if issue.user else "ghost",
-            user_avatar=(
-                issue.user.avatar_url
-                if issue.user and issue.user.avatar_url
-                else "https://github.com/ghost.png"
-            ),
-            author_association=issue.author_association,
-            created_at=issue.created_at,
-            comments=issue.comments,
-            body_html=None,
-            body=issue.body if issue.body else None,
-            reactions=(
-                get_comment_reactions(issue.reactions) if issue.reactions else {}
-            ),
-        )
-
 
 @dataclass(frozen=True, kw_only=True)
 class PullRequestInfo:
@@ -954,34 +913,6 @@ class IssueContext:
             timeline_events=timeline_events,
             highlight_comment=highlight_comment,
         )
-
-
-@dataclass(frozen=True, kw_only=True)
-class DiffContext:
-    repo: RepoInfo
-    pr: PullRequestInfo
-    diff: str
-
-    @property
-    def patch_set(self) -> PatchSet:
-        return PatchSet.from_string(self.diff)
-
-    @classmethod
-    async def from_issue(cls, bot: GitHubBot | OAuthBot, issue: models.Issue) -> Self:
-        repo = await get_repo_from_issue(bot, issue)
-
-        pr = await get_pull_request_from_issue(bot, issue)
-        if not pr:
-            raise ValueError("Issue is not a pull request")
-
-        diff = await get_diff_from_pull_request(bot, pr)
-
-        return cls(
-            repo=RepoInfo.from_repo(repo),
-            pr=PullRequestInfo.from_pr(issue, pr),
-            diff=diff,
-        )
-
 
 @dataclass(frozen=True, kw_only=True)
 class IssueOpenedContext:

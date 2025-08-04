@@ -3,7 +3,7 @@ name = "nonebot_plugin_github_release_notifier"
 version = "0.1.9"
 description = "A plugin for nonebot & onebot to notify group members of new commits, issues, and PRs in GitHub repos."
 authors = [
-  { name = "HTony03", email = "HTony03@foxmail.com" },
+    { name = "HTony03", email = "HTony03@foxmail.com" },
 ]
 readme = "README.md"
 keywords = ["nonebot", "github", "qqbot", "reminder"]
@@ -28,6 +28,12 @@ dependencies = [
     "nonebot-plugin-htmlrender~=0.5",
     "nonebot2~=2.3",
     "packaging~=25.0",
+    "jinja2~=3.1",
+    "markdown-it-py~=3.0",
+    "mdit_py_emoji~=0.1",
+    "humanize~=4.12",
+    "mdit-py-plugins~=0.4",
+    "githubkit~=0.13"
 ]
 
 [project.urls]

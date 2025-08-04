@@ -11,14 +11,14 @@ from nonebot import require, get_driver
 from nonebot.internal.driver.abstract import Driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_activity import check_repo_updates
+from .repo_act import check_repo_updates
 from .setup import pre_plugin_setup, post_plugin_setup
 from .db_action import (
     init_database,
     load_group_configs
 )
 from .commands import repo_group
-from .config import Config, config
+from .config import Config, config, github
 from .data import data_set
 from .debugs import debugs
 

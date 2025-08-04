@@ -5,7 +5,7 @@ from packaging.version import Version
 # noinspection PyPackageRequirements
 from nonebot import logger
 
-from .repo_activity import validate_github_token
+from .repo_act import validate_github_token
 from .db_action import init_database, DB_FILE
 
 __pypi_package_name__ = "nonebot-plugin-github-release-notifier"
