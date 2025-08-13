@@ -1,15 +1,9 @@
-<p align="center">
-  <a href="https://v2.nonebot.dev/store">
-    <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo">
-  </a>
-</p>
-<p align="center">
-  <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText">
-</p>
+<div align="center">
+    <a href="https://v2.nonebot.dev/store">
+    <img src="https://raw.githubusercontent.com/fllesser/nonebot-plugin-template/refs/heads/resource/.docs/NoneBotPlugin.svg" width="310" alt="logo"></a>
 
-<p align="center">
   <em>✨ NoneBot GitHub Release Notifier ✨</em>
-</p>
+</div>
 
 <p align="center">
   <a href="./LICENSE">
@@ -60,9 +54,9 @@ Open the `pyproject.toml` file in the root directory of your NoneBot2 project an
 
 ## ⚙️ Configuration
 
-Before use, ensure that the `SUPERUSERS` configuration item in NoneBot is set.
+Before use, ensure that the `SUPERUSERS` configuration item in NoneBot2 is set.
 
-Add the following configuration items to the `.env` file in your NoneBot2 project:
+Add the following required configuration items to the `.env` file in your NoneBot2 project:
 
 | Config Item | Required | Default | Description |
 |:-----------:|:--------:|:-------:|:-----------:|
@@ -70,31 +64,18 @@ Add the following configuration items to the `.env` file in your NoneBot2 projec
 | GITHUB_RETRIES | No | 3 | Maximum retry attempts for refreshing |
 | GITHUB_RETRY_DELAY | No | 5 | Delay between each refresh retry (seconds) |
 | GITHUB_DISABLE_WHEN_FAIL | No | False | Disable configuration when repository data retrieval fails |
-| GITHUB_SENDING_TEMPLATES | No | Default template | Customizable notification formats (see below) |
+| GITHUB_LANGUAGE | No | "en_us" | Language for sending templates |
 | GITHUB_SEND_FALIURE_GROUP | No | True | Notify group on failure |
 | GITHUB_SEND_FALIURE_SUPERUSER | No | False | Notify superuser on failure |
 | GITHUB_DEFAULT_CONFIG_SETTING | No | True | Monitor all events by default when adding a repo |
 | GITHUB_SEND_IN_MARKDOWN | No | False | Send messages as Markdown images |
 | GITHUB_SEND_DETAIL_IN_MARKDOWN | No | True | Send details (pr/issue/release) as Markdown images |
 | GITHUB_UPLOAD_REMOVE_OLDER_VER | No | True | Remove old versions when uploading release files (in development) |
+| GITHUB_THEME | No | "dark" | (For issue/pull request comments) Page rendering style ["light","dark"] |
 
 `v0.1.9` removed support for adding group repo via `.env`. Please use commands for related features.
 
-### Customizable Notification Formats
-
-The `GITHUB_SENDING_TEMPLATES` config allows users to customize the notification format for GitHub events. Format:
-
-```dotenv
-# Format: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
-# Available parameters:
-# commit: repo, message, author, url, time
-# issue: repo, title, author, url, time
-# pull_req: repo, title, author, url, time
-# release: repo, name, version, details, url, time
-# Usage: '{<parameter>}' (uses Python format)
-# Defaults to the standard template if not set
-github_sending_templates={}
-```
+`v0.1.10` removed custom template output format, please use `github_language` configuration for related templates.
 
 ## 🎉 Usage
 
@@ -113,75 +94,6 @@ For private messages, add the group ID at the end of the command, e.g. `/repo.ad
 | /refresh_group_repo or /repo.refresh | SUPERUSERS or Admins | No | Private & Group | Refresh GitHub status |
 | /repo_info or /repo.info | Everyone | No | Private & Group | View repository details |
 | /check_api_usage | Everyone | No | Private & Group | View GitHub API usage |
-| /latest_release | Everyone | No | Private & Group | Get latest release of a repository |
-| /latest_commit | Everyone | No | Private & Group | Get latest commit of a repository |
-
-### Examples
-
-1. Add a repository mapping:
-
-   ```
-   /add_group_repo <user>/<repo>
-   ```
-
-2. Delete a repository mapping:
-
-   ```
-   /del_group_repo <user>/<repo>
-   ```
-
-3. Modify repository configuration:
-
-   ```
-   /change_group_repo_cfg <user>/<repo> <config> <value>
-   ```
-
-   - `<config>` options and types:
-     - `commit`/`issue`/`pull_req`/`release`/`commits`/`issues`/`prs`/`releases`/`send_release`: boolean (True/False)
-     - `release_folder`: string
-
-   For example:
-
-   ```
-   /change_group_repo_cfg <user>/<repo> issue False
-   /change_group_repo_cfg <user>/<repo> release_folder <folder_name>
-   ```
-
-4. View the repository mappings for the current group:
-
-   ```
-   /show_group_repo
-   ```
-
-5. Refresh GitHub status:
-
-   ```
-   /refresh_group_repo
-   ```
-
-6. View repository details:
-
-   ```
-   /repo_info <user>/<repo>
-   ```
-
-7. View API usage:
-
-   ```
-   /check_api_usage
-   ```
-
-8. Get latest release:
-
-   ```
-   /latest_release <user>/<repo>
-   ```
-
-9. Get latest commit:
-
-   ```
-   /latest_commit <user>/<repo>
-   ```
 
 ### TODOS
 
@@ -191,8 +103,8 @@ For private messages, add the group ID at the end of the command, e.g. `/repo.ad
 - [x] Markdown message support
 - [x] Markdown to image rendering
 - [ ] Issue/PR details support
-- [ ] Forward issue/PR comments
-- [ ] Render GitHub page for PR/issue display
+- [x] Forward issue/PR comments
+- [x] Render GitHub page for PR/issue display
 
 ## LICENSE
 
@@ -200,12 +112,19 @@ This plugin is distributed under the MIT License. See [here](./LICENSE) for deta
 
 ## Releases
 
+`v0.1.10` Added issue comment forwarding support, using [`cscs181/QQ-GitHub-Bot`](https://github.com/cscs181/QQ-GitHub-Bot) to render new pages
+
 `v0.1.9` Removed support for adding group repo via `.env`, please use commands for related features
 
-`v0.1.8` Bug fixes, readme update
+`v0.1.8` Known issues fixed, readme updated
 
 `v0.1.3`-`v0.1.7` Bug fixes, published to nonebot
 
 `V0.1.2` Updated release information
 
-`V0.1.0`-`V0.1.1` Main program completed, features adapted, ready for 
+`V0.1.0`-`V0.1.1` Main program completed, features adapted, ready for release
+</br>
+</br>
+</br>
+#### Disclaimer
+**Some** of the plugin code is derived from/inspired by [`cscs181/QQ-GitHub-Bot`](https://github.com/cscs181/QQ-GitHub-Bot), distributed under the MIT License, details can be found [here](https://github.com/cscs181/QQ-GitHub-Bot/blob/master/LICENSE).

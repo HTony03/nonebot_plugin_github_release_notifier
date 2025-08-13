@@ -54,7 +54,7 @@
 
 ## ⚙️ 配置
 
-使用前请确保 nonebot 的 SUPERUSERS 配置项已配置。
+使用前请确保 nonebot2 的 SUPERUSERS 配置项已配置。
 
 在 nonebot2 项目的 `.env` 文件中添加下表中的必填配置：
 
@@ -64,13 +64,14 @@
 | GITHUB_RETRIES | 否 | 3 | 刷新最大重试次数 |
 | GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
 | GITHUB_DISABLE_WHEN_FAIL | 否 | False | 在获取仓库数据失败时禁用配置 |
-| GITHUB_LANGUAGE | 否 | en_us | 发送的模板语言 |
+| GITHUB_LANGUAGE | 否 | "en_us" | 发送的模板语言 |
 | GITHUB_SEND_FALIURE_GROUP | 否 | True | 失败时是否通知群聊 |
 | GITHUB_SEND_FALIURE_SUPERUSER | 否 | False | 失败时是否通知超级用户 |
 | GITHUB_DEFAULT_CONFIG_SETTING | 否 | True | 添加仓库时默认监控所有事件 |
 | GITHUB_SEND_IN_MARKDOWN | 否 | False | 是否以 Markdown 图片方式发送消息 |
 | GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 | True | 是否以 Markdown 图片方式发送详细信息（pr/issue/release）|
 | GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 | True | 上传 release 文件时是否移除旧版本( in development) |
+| GITHUB_THEME | 否 | "dark" | （针对issue/pull request comment）渲染页面风格 ["light","dark"] | 
 
 `v0.1.9` 删除了对于`.env`添加群组repo的适配, 请使用指令使用相关功能
 
@@ -113,6 +114,8 @@
 
 ## Releases
 
+`v0.1.10` 添加issue comment转发支持，使用[`cscs181/QQ-GitHub-Bot`](https://github.com/cscs181/QQ-GitHub-Bot)渲染新页面
+
 `v0.1.9` 删除了对于`.env`添加群组repo, 请使用指令使用相关功能
 
 `v0.1.8` 已知问题修复，readme更新
@@ -122,7 +125,9 @@
 `V0.1.2` 修改发布信息
 
 `V0.1.0`-`V0.1.1` 主程序完成，功能适配， 准备发布
-
+</br>
+</br>
+</br>
 #### 免责申明（叠甲（bushi））
 插件**部分**代码来自/启发自 [`cscs181/QQ-GitHub-Bot`](https://github.com/cscs181/QQ-GitHub-Bot)，以MIT协议传播，详细可见 [此处](https://github.com/cscs181/QQ-GitHub-Bot/blob/master/LICENSE)。
 

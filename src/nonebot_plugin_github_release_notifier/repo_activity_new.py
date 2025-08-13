@@ -141,9 +141,10 @@ async def fetch_github_data(
         endpoint: str
 ) -> Sequence[Commit | Issue | PullRequest | PullRequestSimple | Release] | None:
     """
-    Fetch data from the GitHub API for a specific repo and endpoint.
+    Fetch data from the GitHub API
+    for a specific repo and endpoint.
     """
-    global api_cache
+
     cache = api_cache.get(repo, {}).get(endpoint, None)
 
     # Check if the data exists in the cache
@@ -224,7 +225,6 @@ async def process_issues_and_prs(
     """
     Process issues and pull requests, checking for new items and comments.
     """
-    global temp_commit
     if content_type not in ["issues", "prs"]:
         raise ValueError(
             f"Invalid type: {content_type}. Must be 'issues' or 'prs'."
@@ -647,12 +647,8 @@ def reset_temp_disabled_configs() -> None:
 
 
 async def check_repo_updates() -> None:
-    """
-    Check for new commits, issues, PRs, and releases
-    for all repos and notify groups.
-    """
-    # global api_cache
-    # api_cache = {}
+    """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
+    api_cache.clear()
     try:
         global run_lock
         if run_lock:
@@ -728,8 +724,9 @@ async def check_repo_updates() -> None:
                             html = (
                                 f"<p>GitHub API Error:</p>"
                                 f"<p style='white-space=pre-wrap'>"
-                                f"{e.__cause__.last_attempt.__class__}:{e.__cause__.last_attempt}".replace('\n', '</br>')  # pylint: disable=no-member  # type: ignore
-                            )
+                                f"{e.__cause__.last_attempt.__class__}: "  # pylint: disable=no-member  # type: ignore
+                                f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
+                                ).replace('\n', '</br>')
                             # Handle GitHub API errors
                             if config.github_send_faliure_group:
                                 pic = await html_to_pic(html)

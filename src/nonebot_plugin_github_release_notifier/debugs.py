@@ -103,16 +103,5 @@ async def deeee(bot:Bot, event: MessageEvent):
     logger.info(f"current auth: {github.auth.__class__}")
     owner, repo_name = 'KuaYueTeam/NeoKuayue'.split('/')
     dat = (await github.rest.issues.async_list_for_repo(
-            owner=owner, repo=repo_name, state="all",sort="created",per_page=1000)).parsed_data
+            owner=owner, repo=repo_name, state="all", sort="created", per_page=1000)).parsed_data
     await bot.send(event, MessageSegment.image(await issue_to_image(dat[0])))
-
-@debugs.command('render3').handle()
-async def deeee(bot:Bot, event: MessageEvent):
-    from .repo_activity_new import github
-    from .renderer import issue_to_image
-    from .repo_activity_new import committer
-    from nonebot.adapters.onebot.v11 import MessageSegment
-    from githubkit.exception import PrimaryRateLimitExceeded
-    logger.info(f"current auth: {github.auth.__class__}")
-    owner, repo_name = 'KuaYueTeam/NeoKuayue'.split('/')
-    await committer(repo_name, owner,"issues",977787918,bot)

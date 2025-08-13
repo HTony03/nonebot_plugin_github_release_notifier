@@ -47,7 +47,9 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     """
 
     github_language: str = "en_us"
-    """language for markdown sending templates"""
+    """
+    language for markdown sending templates
+    """
 
     github_default_config_setting: bool = True
     """
