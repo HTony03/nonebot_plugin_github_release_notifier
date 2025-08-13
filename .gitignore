@@ -6,6 +6,7 @@
 *.s3db
 token*
 launch.json
+bot.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -113,6 +114,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.env
 
 # Spyder project settings
 .spyderproject

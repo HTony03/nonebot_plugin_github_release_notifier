@@ -3,6 +3,9 @@ from nonebot import get_plugin_config
 from nonebot import logger, require
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from typing import Literal
+from pathlib import Path
+import json
 
 require("nonebot_plugin_localstore")
 # pylint: disable=wrong-import-position
@@ -43,19 +46,8 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     Disable the configuration when failing to retrieve repository data.
     """
 
-    github_sending_templates: dict = {}
-    """
-    Sending templates for different events.
-    Format: {"commit": <your_template>, "issue": <your_template>,
-    "pull_req": <your_template>, "release": <your_template>}
-    Available parameters:
-    - commit: repo, message, author, url
-    - issue: repo, title, author, url
-    - pull_req: repo, title, author, url
-    - release: repo, name, version, details, url
-    Usage: '{<parameter>}' (using Python's format function).
-    Defaults to the standard template if not set.
-    """
+    github_language: str = "en_us"
+    """language for markdown sending templates"""
 
     github_default_config_setting: bool = True
     """
@@ -77,9 +69,31 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
 
     github_upload_remove_older_ver: bool = True
 
+    github_theme: Literal['light', 'dark'] = "dark"
+
+
+# 加载翻译
+def get_translation(language: str | None = None) -> dict:
+    if language is None:
+        language = config.github_language
+
+    translation_file = Path(__file__).parent / "lang" / f"{language}.json"
+
+    if not translation_file.exists():
+        logger.error(f"Failed to fetch translation file for lang: {language}, using default(en_us)")
+        translation_file = Path(__file__).parent / "lang" / "en_us.json"
+
+    try:
+        with open(translation_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
 
 try:
     config: Config = get_plugin_config(Config)
+    t = get_translation(config.github_language)
 except (ValueError, TypeError) as e:
     logger.error(f"read config failed: {e}, using default config")
     config: Config = Config()
+    t = get_translation("en_us")

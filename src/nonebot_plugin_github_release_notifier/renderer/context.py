@@ -1,8 +1,8 @@
 """
 @Author         : yanyongyu
 @Date           : 2023-10-18 16:20:28
-@LastEditors    : yanyongyu
-@LastEditTime   : 2024-08-18 17:29:14
+@LastEditors    : HTony03
+@LastEditTime   : 2025-08-13 17:12:30
 @Description    : None
 @GitHub         : https://github.com/yanyongyu
 """
@@ -13,16 +13,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Self, Literal, TypeAlias, TypedDict
 
-from nonebot import logger
-from unidiff import PatchSet
 from githubkit.versions.latest import models
-from nonebot.adapters.github import OAuthBot, GitHubBot
 
 from .utils import (
     get_repo_from_issue,
     get_comment_reactions,
     get_issue_label_color,
-    get_diff_from_pull_request,
     get_pull_request_from_issue,
 )
 
@@ -58,6 +54,20 @@ class RepoInfo:
             template_full_name=(
                 repo.template_repository.full_name if repo.template_repository else None
             ),
+            forks_count=repo.forks_count,
+            stargazers_count=repo.stargazers_count,
+        )
+
+    @classmethod
+    def from_repo_info(cls, repo: "models.Repository") -> Self:
+        return cls(
+            owner=repo.owner.login if repo.owner else "unknown",
+            name=repo.name,
+            private=repo.private,
+            fork=repo.fork,
+            is_template=bool(repo.is_template),
+            parent_full_name=None,
+            template_full_name=None,
             forks_count=repo.forks_count,
             stargazers_count=repo.stargazers_count,
         )
@@ -122,6 +132,30 @@ class IssueInfo:
             ),
         )
 
+    @classmethod
+    def from_webhook(
+        cls, issue: models.WebhookIssuesOpenedPropIssue | models.PullRequestWebhook
+    ) -> Self:
+        return cls(
+            number=issue.number,
+            title=issue.title,
+            state=issue.state,
+            state_reason=issue.state_reason if issue.state_reason else None,
+            draft=bool(getattr(issue, "draft", False)),
+            user=issue.user.login if issue.user else "ghost",
+            user_avatar=(
+                issue.user.avatar_url if issue.user else "https://github.com/ghost.png"
+            ),
+            author_association=issue.author_association,
+            created_at=issue.created_at,
+            comments=issue.comments,
+            body_html=None,
+            body=issue.body if issue.body else None,
+            reactions=(
+                get_comment_reactions(issue.reactions) if issue.reactions else {}
+            ),
+        )
+
 
 @dataclass(frozen=True, kw_only=True)
 class PullRequestInfo:
@@ -156,11 +190,7 @@ class PullRequestInfo:
     @classmethod
     def from_pr(
         cls,
-        issue: (
-            models.Issue
-            | models.WebhookIssueCommentCreatedPropIssue
-            | models.WebhookIssueCommentEditedPropIssue
-        ),
+        issue: models.Issue,
         pr: models.PullRequest,
     ) -> Self:
         return cls(
@@ -341,10 +371,10 @@ class TimelineEventCrossReferenced:
 
     @classmethod
     async def from_event(
-        cls, bot: GitHubBot | OAuthBot, event: models.TimelineCrossReferencedEvent
+        cls, event: models.TimelineCrossReferencedEvent
     ) -> Self:
         if event.source.issue and (
-            pull_request := await get_pull_request_from_issue(bot, event.source.issue)
+            pull_request := await get_pull_request_from_issue(event.source.issue)
         ):
             source = PullRequestInfo.from_pr(event.source.issue, pull_request)
         elif event.source.issue:
@@ -807,7 +837,7 @@ class ReadmeContext:
 
     @classmethod
     async def from_repo_readme(
-        cls, bot: GitHubBot | OAuthBot, repo: models.FullRepository, content: str
+        cls, repo: models.FullRepository, content: str
     ) -> Self:
         return cls(
             repo=RepoInfo.from_repo(repo),
@@ -829,84 +859,18 @@ class IssueContext:
     @classmethod
     async def from_issue(
         cls,
-        bot: GitHubBot | OAuthBot,
         issue: models.Issue,
         highlight_comment: int | None = None,
     ) -> Self:
-        repo = await get_repo_from_issue(bot, issue)
+        repo = await get_repo_from_issue(issue)
 
-        if pull_request := await get_pull_request_from_issue(bot, issue):
+        if pull_request := await get_pull_request_from_issue(issue):
             issue_info = PullRequestInfo.from_pr(issue, pull_request)
         else:
             issue_info = IssueInfo.from_issue(issue)
 
         timeline_events: list[TimelineEvent] = []
-        async for event in bot.github.paginate(
-            bot.rest.issues.async_list_events_for_timeline,
-            owner=repo.owner.login,
-            repo=repo.name,
-            issue_number=issue.number,
-        ):
-            if isinstance(event, models.AddedToProjectIssueEvent):
-                timeline_events.append(TimelineEventAddedToProject.from_event(event))
-            elif isinstance(event, models.TimelineAssignedIssueEvent):
-                timeline_events.append(TimelineEventAssigned.from_event(event))
-            elif isinstance(event, models.TimelineCommentEvent):
-                timeline_events.append(TimelineEventCommented.from_event(event))
-            elif isinstance(event, models.TimelineCommittedEvent):
-                timeline_events.append(TimelineEventCommitted.from_event(event))
-            elif isinstance(event, models.TimelineCrossReferencedEvent):
-                timeline_events.append(
-                    await TimelineEventCrossReferenced.from_event(bot, event)
-                )
-            elif isinstance(event, models.DemilestonedIssueEvent):
-                timeline_events.append(TimelineEventDemilestoned.from_event(event))
-            elif isinstance(event, models.LabeledIssueEvent):
-                timeline_events.append(TimelineEventLabeled.from_event(event))
-            elif isinstance(event, models.LockedIssueEvent):
-                timeline_events.append(TimelineEventLocked.from_event(event))
-            elif isinstance(event, models.MilestonedIssueEvent):
-                timeline_events.append(TimelineEventMilestoned.from_event(event))
-            elif isinstance(event, models.MovedColumnInProjectIssueEvent):
-                timeline_events.append(
-                    TimelineEventMoveColumnInProject.from_event(event)
-                )
-            elif isinstance(event, models.RemovedFromProjectIssueEvent):
-                timeline_events.append(
-                    TimelineEventRemovedFromProject.from_event(event)
-                )
-            elif isinstance(event, models.RenamedIssueEvent):
-                timeline_events.append(TimelineEventRenamed.from_event(event))
-            elif isinstance(event, models.ReviewDismissedIssueEvent):
-                timeline_events.append(TimelineEventReviewDismissed.from_event(event))
-            elif isinstance(event, models.ReviewRequestRemovedIssueEvent):
-                timeline_events.append(
-                    TimelineEventReviewRequestRemoved.from_event(event)
-                )
-            elif isinstance(event, models.ReviewRequestedIssueEvent):
-                timeline_events.append(TimelineEventReviewRequested.from_event(event))
-            elif isinstance(event, models.TimelineReviewedEvent):
-                timeline_events.append(TimelineEventReviewed.from_event(event))
-            elif isinstance(event, models.TimelineUnassignedIssueEvent):
-                timeline_events.append(TimelineEventUnassigned.from_event(event))
-            elif isinstance(event, models.UnlabeledIssueEvent):
-                timeline_events.append(TimelineEventUnlabeled.from_event(event))
-            elif isinstance(event, models.StateChangeIssueEvent):
-                timeline_events.append(TimelineEventStateChange.from_event(event))
-            else:
-                event_data = event.model_dump(exclude_unset=True)
-                logger.debug(f"Unhandled event: {event_data}")
-                logger.error(
-                    "Unhandled event type: {event_type}",
-                    event_type=f"{event.__class__.__name__}"
-                    + (
-                        f" {event_name}"
-                        if (event_name := getattr(event, "event", None))
-                        else ""
-                    ),
-                    event=event_data,
-                )
-
+        # TODO: try time events
         return cls(
             repo=RepoInfo.from_repo(repo),
             issue=issue_info,
@@ -925,23 +889,24 @@ class IssueOpenedContext:
         return isinstance(self.issue, PullRequestInfo)
 
     @classmethod
-    async def from_webhook(
+    async def from_issue(
         cls,
-        bot: GitHubBot | OAuthBot,
-        repo: models.RepositoryWebhooks,
-        issue: models.WebhookIssuesOpenedPropIssue | models.PullRequestWebhook,
+        repo: models.Repository,
+        issue: models.Issue,
     ) -> Self:
-        if isinstance(issue, models.PullRequestWebhook):
-            issue_info = PullRequestInfo.from_webhook(issue)
+        if not repo:
+            repo = await get_repo_from_issue(issue)
+        if pull_request := await get_pull_request_from_issue(issue):
+            issue_info = PullRequestInfo.from_pr(issue, pull_request)
         else:
-            issue_info = IssueInfo.from_webhook(issue)
+            issue_info = IssueInfo.from_issue(issue)
 
         labels: list[tuple[str, tuple[int, int, int, int, int, int]]] = []
         if issue.labels:
             for label in issue.labels:
                 labels.append((label.name, get_issue_label_color(label.color)))
 
-        return cls(repo=RepoInfo.from_webhook(repo), issue=issue_info, labels=labels)
+        return cls(repo=RepoInfo.from_repo_info(repo), issue=issue_info, labels=labels)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -955,25 +920,19 @@ class IssueCommentedContext:
         return isinstance(self.issue, PullRequestInfo)
 
     @classmethod
-    async def from_webhook(
+    async def from_issue_comment(
         cls,
-        bot: GitHubBot | OAuthBot,
-        repo: models.RepositoryWebhooks,
-        issue: (
-            models.WebhookIssueCommentCreatedPropIssue
-            | models.WebhookIssueCommentEditedPropIssue
-        ),
-        comment: (
-            models.WebhookIssueCommentCreatedPropComment | models.WebhooksIssueComment
-        ),
+        repo: models.Repository,
+        issue: models.Issue,
+        comment: models.IssueComment,
     ) -> Self:
-        if pull_request := await get_pull_request_from_issue(bot, issue):
+        if pull_request := await get_pull_request_from_issue(issue):
             issue_info = PullRequestInfo.from_pr(issue, pull_request)
         else:
-            issue_info = IssueInfo.from_webhook(issue)
+            issue_info = IssueInfo.from_issue(issue)
 
         return cls(
-            repo=RepoInfo.from_webhook(repo),
+            repo=RepoInfo.from_repo_info(repo),
             issue=issue_info,
             comment=TimelineEventCommented.from_webhook(comment),
         )
@@ -991,37 +950,37 @@ class IssueClosedContext:
         return isinstance(self.issue, PullRequestInfo)
 
     @classmethod
-    async def from_webhook(
+    async def from_issue(
         cls,
-        bot: GitHubBot | OAuthBot,
-        repo: models.RepositoryWebhooks,
-        issue: models.WebhookIssuesClosedPropIssue | models.PullRequestWebhook,
-        sender: models.SimpleUserWebhooks,
+        repo: models.Repository,
+        issue: models.Issue,
+        sender: models.SimpleUser,
     ) -> Self:
-        if isinstance(issue, models.PullRequestWebhook):
-            issue_info = PullRequestInfo.from_webhook(issue)
-            state_reason = None
-            merge_commit_sha = issue.merge_commit_sha
+        if pull_request := await get_pull_request_from_issue(issue):
+            issue_info = PullRequestInfo.from_pr(issue, pull_request)
+            merge_commit_sha = pull_request.merge_commit_sha
         else:
-            issue_info = IssueInfo.from_webhook(issue)
-            state_reason = issue.state_reason if issue.state_reason else None
+            issue_info = IssueInfo.from_issue(issue)
             merge_commit_sha = None
 
         labels: list[tuple[str, tuple[int, int, int, int, int, int]]] = []
         if issue.labels:
             for label in issue.labels:
+                if isinstance(label, str):
+                    continue
                 labels.append((label.name, get_issue_label_color(label.color)))
 
         return cls(
-            repo=RepoInfo.from_webhook(repo),
+            repo=RepoInfo.from_repo_info(repo),
             issue=issue_info,
             labels=labels,
             event=TimelineEventStateChange(
                 event="closed",
                 actor=sender.login,
                 actor_avatar=sender.avatar_url,
-                created_at=issue.closed_at or issue.updated_at,
-                state_reason=state_reason,
+                created_at=issue.closed_at,
+                state_reason=issue.state_reason,
                 commit_id=merge_commit_sha,
             ),
         )
+

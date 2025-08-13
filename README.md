@@ -64,7 +64,7 @@
 | GITHUB_RETRIES | 否 | 3 | 刷新最大重试次数 |
 | GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
 | GITHUB_DISABLE_WHEN_FAIL | 否 | False | 在获取仓库数据失败时禁用配置 |
-| GITHUB_SENDING_TEMPLATES | 否 | 默认模版 | 自定义发送信息格式（见下文） |
+| GITHUB_LANGUAGE | 否 | en_us | 发送的模板语言 |
 | GITHUB_SEND_FALIURE_GROUP | 否 | True | 失败时是否通知群聊 |
 | GITHUB_SEND_FALIURE_SUPERUSER | 否 | False | 失败时是否通知超级用户 |
 | GITHUB_DEFAULT_CONFIG_SETTING | 否 | True | 添加仓库时默认监控所有事件 |
@@ -74,27 +74,8 @@
 
 `v0.1.9` 删除了对于`.env`添加群组repo的适配, 请使用指令使用相关功能
 
-### 自定义发送信息格式
+`v0.1.10` 删除了使用自定义模板输出格式，请使用`github_language`配置相关模板
 
-`GITHUB_SENDING_TEMPLATES` 配置项允许用户自定义 GitHub 事件的发送模版。格式如下：
-
-```dotenv
-# 格式: {"commit": <your_template>, "issue": <your_template>, "pull_req": <your_template>, "release": <your_template>}
-# 可用参数：
-# commit: repo, message, author, url, time
-# issue: repo, title, author, url, time
-# pull_req: repo, title, author, url, time
-# release: repo, name, version, details, url, time
-# 用法: '{<parameter>}' (使用 Python format 功能实现)
-# 未设定时使用默认模版
-github_sending_templates='
-{
-    "commit": "📜 {repo}有新提交\n\n提交信息: {message}\n提交人: {author}\n提交时间: {time}\nURL: {url}",
-    "issue": "🐛 **{repo}有新issue**\n\nissue标题: {title}\n作者: {author}\nissue发布时间: {time}\nURL: {url}",
-    "pull_req": "🔀 **{repo}有新PR**\n\nPR标题: {title}\n作者: {author}\nPr发布时间: {time}\nURL: {url}",
-    "release": "🚀 **{repo}有新版本**\n\n**版本名称:** {name}\n版本: {version}\n详细信息:\n {details}\n发布时间: {time}\nURL: {url}"
-}'
-```
 
 ## 🎉 使用
 
@@ -113,75 +94,7 @@ github_sending_templates='
 | /refresh_group_repo 或 /repo.refresh | SUPERUSERS 或管理员 | 否 | 私聊&群聊 | 刷新 GitHub 状态 |
 | /repo_info 或 /repo.info | 所有人 | 否 | 私聊&群聊 | 查看仓库详细信息 |
 | /check_api_usage | 所有人 | 否 | 私聊&群聊 | 查看 GitHub API 使用情况 |
-| /latest_release | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Release |
-| /latest_commit | 所有人 | 否 | 私聊&群聊 | 获取仓库最新 Commit |
 
-### 示例
-
-1. 添加仓库映射：
-
-   ```
-   /add_group_repo <user>/<repo>
-   ```
-
-2. 删除仓库映射：
-
-   ```
-   /del_group_repo <user>/<repo>
-   ```
-
-3. 修改仓库配置：
-
-   ```
-   /change_group_repo_cfg <user>/<repo> <config> <value>
-   ```
-
-   - `<config>` 可选项及类型：
-     - `commit`/`issue`/`pull_req`/`release`/`commits`/`issues`/`prs`/`releases`/`send_release`：布尔值（True/False）
-     - `release_folder`：字符串
-
-   例如：
-
-   ```
-   /change_group_repo_cfg <user>/<repo> issue False
-   /change_group_repo_cfg <user>/<repo> release_folder <folder_name>
-   ```
-
-4. 查看当前群组的仓库映射：
-
-   ```
-   /show_group_repo
-   ```
-
-5. 刷新 GitHub 状态：
-
-   ```
-   /refresh_group_repo
-   ```
-
-6. 查看仓库详细信息：
-
-   ```
-   /repo_info <user>/<repo>
-   ```
-
-7. 查看 API 使用情况：
-
-   ```
-   /check_api_usage
-   ```
-
-8. 获取最新 Release：
-
-   ```
-   /latest_release <user>/<repo>
-   ```
-
-9. 获取最新 Commit：
-
-   ```
-   /latest_commit <user>/<repo>
-   ```
 
 ### TODOS
 
@@ -191,8 +104,8 @@ github_sending_templates='
 - [x] markdown 信息支持
 - [x] markdown 转图片展示
 - [ ] issue/pr 详细信息支持
-- [ ] 转发issue/pr comments
-- [ ] 渲染gh页面展示pr/issue
+- [x] 转发issue/pr comments
+- [x] 渲染gh页面展示pr/issue
 
 ## LICENCE
 

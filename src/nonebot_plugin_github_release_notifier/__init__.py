@@ -11,18 +11,16 @@ from nonebot import require, get_driver
 from nonebot.internal.driver.abstract import Driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_act import check_repo_updates
+from .repo_activity_new import check_repo_updates
 from .setup import pre_plugin_setup, post_plugin_setup
 from .db_action import (
-    init_database,
     load_group_configs
 )
 from .commands import repo_group
-from .config import Config, config, github
-from .data import data_set
+from .config import Config, config
 from .debugs import debugs
 
-__version__ = "0.1.7.dev1"
+__version__ = "0.1.10.dev1"
 DEBUG: bool = config.github_dbg
 
 __plugin_meta__ = PluginMetadata(
@@ -57,7 +55,6 @@ pre_plugin_setup()
 group_repo_dict = load_group_configs(False)
 if DEBUG:
     logger.debug(f"Read from db: {group_repo_dict}")
-data_set.set("group_repo_dict", group_repo_dict)
 
 
 # TODO: Reformat database
@@ -66,7 +63,6 @@ data_set.set("group_repo_dict", group_repo_dict)
 def refresh_data_from_db() -> None:
     """Refresh the group-to-repo mapping from the database."""
     group_repo_dict = load_group_configs(False)
-    data_set.set("group_repo_dict", group_repo_dict)
 
 
 # Register the initialization function to run when the bot starts

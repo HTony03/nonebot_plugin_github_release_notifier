@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "nonebot_plugin_github_release_notifier"
 version = "0.1.9"
@@ -62,7 +66,11 @@ test = [
 ]
 
 [tool.nonebot]
-plugin-dirs = ["src"]
+plugin_dirs = ["src/"]
+adapters = [
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
+]
+
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -137,3 +145,12 @@ executionEnvironments = [
 typeCheckingMode = "standard"
 reportShadowedImports = false
 disableBytesTypePromotions = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"nonebot_plugin_github_release_notifier" = [
+    "lang/*.json",
+    "renderer/templates/*"
+]

@@ -1,8 +1,8 @@
 """
 @Author         : yanyongyu
 @Date           : 2022-09-14 16:07:50
-@LastEditors    : yanyongyu
-@LastEditTime   : 2024-08-18 17:29:43
+@LastEditors    : HTony03
+@LastEditTime   : 2025-08-13 17:12:30
 @Description    : Jinja filters for renderer
 @GitHub         : https://github.com/yanyongyu
 """
@@ -10,7 +10,12 @@
 __author__ = "yanyongyu"
 
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+try:
+    UTC = datetime.UTC  # Python 3.11+ # type: ignore
+except AttributeError:
+    UTC = timezone.utc  # Python <3.11
 
 import humanize
 from nonebot import logger

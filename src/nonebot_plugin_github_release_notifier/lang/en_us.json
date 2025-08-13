@@ -1,0 +1,6 @@
+{
+    "commit": "📜 New Commit in {repo}\n\nMessage: {message}\nAuthor: {author}\nCommit time: {time}\nURL: {url}",
+    "issue": "🐛 **New Issue in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nIssue created time: {time}\nURL: {url}",
+    "pull_req": "🔀 **New Pull Request in {repo}!**\n\nTitle: {title}\nAuthor: {author}\nPr created at: {time}\nURL: {url}",
+    "release": "🚀 **New Release for {repo}!**\n\n**Name:** {name}\nVersion: {version}\nDetails:\n {details}\nRelease time:{time}\nURL: {url}"
+}

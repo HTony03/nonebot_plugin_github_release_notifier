@@ -1,5 +1,4 @@
 from datetime import datetime  # Standard library imports
-import aiohttp  # Third-party imports
 
 from nonebot import CommandGroup, on_command
 from nonebot.adapters.onebot.v11 import GROUP_ADMIN, GROUP_OWNER, Bot
@@ -14,6 +13,9 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
+from githubkit.rest import FullRepository
+from tenacity import retry, stop_after_attempt, wait_fixed, RetryError
+from githubkit import Response
 
 from .config import config
 from .db_action import (
@@ -30,48 +32,26 @@ from .pic_process import html_to_pic, md_to_pic
 ).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
-    headers = {}
-    from .repo_activity import GITHUB_TOKEN
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
-
-    api_url = "https://api.github.com/rate_limit"
-
+    from .repo_activity_new import github
+    resp = github.rest.rate_limit.get()
+    logger.info(resp)
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as response:
-                response.raise_for_status()
-                data = await response.json()
+        parsed = resp.parsed_data
+        reset_time = datetime.fromtimestamp(parsed.rate.reset).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ) if parsed.rate.reset else "Unknown"
 
-                # Extract rate limit information
-                rate_limit = data.get("rate", {})
-                remaining = rate_limit.get("remaining", "Unknown")
-                limit = rate_limit.get("limit", "Unknown")
-                reset_time = rate_limit.get("reset", "Unknown")
-
-                # Format the reset time if available
-                if reset_time != "Unknown":
-                    reset_time = datetime.fromtimestamp(reset_time).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-
-                message = (
-                    f"**GitHub API Usage**\n"
-                    f"Remaining: {remaining}\n"
-                    f"Limit: {limit}\n"
-                    f"Reset Time: {reset_time}"
-                )
-                await bot.send(event, message=MessageSegment.text(message))
-    except aiohttp.ClientResponseError as e:
-        error_message = (
-            f"Failed to fetch GitHub API usage: {e.status} - {e.message}"
+        message = (
+            f"GitHub API Usage:\n"
+            f"   - Remaining: {parsed.rate.remaining}\n"
+            f"   - Limit: {parsed.rate.limit}\n"
+            f"   - Reset Time: {reset_time}"
         )
-        logger.error(error_message)
-        await bot.send(event, message=MessageSegment.text(error_message))
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        fatal_message = f"Fatal error while fetching GitHub API usage: {e}"
-        logger.error(fatal_message)
-        await bot.send(event, message=MessageSegment.text(fatal_message))
+        await bot.send(event, MessageSegment.text(message))
+    except Exception:
+        logger.opt(exception=True).error("Failed to fetch GitHub API usage")
+
+    return
 
 
 def link_to_repo_name(link: str) -> str:
@@ -102,6 +82,7 @@ async def add_repo(
         bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Add a new repository mapping."""
+    from .repo_activity_new import github
     command_args = args.extract_plain_text().split()
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo add <repo> [group_id]")
@@ -115,6 +96,21 @@ async def add_repo(
         if len(command_args) > 1
         else None
     )
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+    async def fetch_repo(repo: str) -> Response[FullRepository]:
+        return await github.rest.repos.async_get(
+            owner=repo.split('/')[0], repo=repo.split('/')[1]
+        )
+    try:
+        await fetch_repo(repo)
+    except RetryError as e:
+        logger.error(f"Failed to fetch repository for {repo}")
+        await bot.send(event, f"Failed to fetch repository data for {repo}.")
+        await bot.send(event, "Please check if the repository exists, whether it is public.")
+        await bot.send(event, "To proceed with private repositories, please contact the bot "
+                       "admin to generate a github token accessible to the repo.")
+        await bot.send(event, f"error details: {e.last_attempt.__class__.__name__}: {e.last_attempt.exception()}")
+        return
 
     if not group_id:
         await bot.send(event, "Group ID is required for private messages.")
@@ -126,11 +122,7 @@ async def add_repo(
                         config.github_default_config_setting,
                         config.github_default_config_setting,
                         None,
-                        config.github_default_config_setting, )
-    from . import (
-        refresh_data_from_db,
-    )
-    refresh_data_from_db()
+                        False)
     await bot.send(event, f"Added repository mapping: {group_id} -> {repo}")
     logger.info(f"Added repository mapping: {group_id} -> {repo}")
 
@@ -174,8 +166,6 @@ async def delete_repo(
         return
 
     remove_group_repo_data(group_id, repo)
-    from . import refresh_data_from_db
-    refresh_data_from_db()
     await bot.send(event, f"Deleted repository mapping: {group_id} -> {repo}")
     logger.info(f"Deleted repository mapping: {group_id} -> {repo}")
 
@@ -231,7 +221,7 @@ async def change_repo(
     if config_key not in [
         "commit", "issue", "pull_req", "release",
         "commits", "issues", "prs", "releases", 'release_folder',
-        'send_release'
+        'send_release', 'send_issue_comment', 'send_pr_comment'
     ]:
         await bot.send(
             event,
@@ -243,8 +233,6 @@ async def change_repo(
         return
 
     change_group_repo_cfg(group_id, repo, config_key, config_value)
-    from . import refresh_data_from_db
-    refresh_data_from_db()
     await bot.send(
         event,
         f"Changed configuration for {repo} ({config_key}) to {config_value}."
@@ -331,83 +319,83 @@ async def repo_info(
         bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Show repository information."""
-    command_args = args.extract_plain_text().split()
-    if len(command_args) < 1:
-        await bot.send(event, "Usage: repo info <repo>")
-        return
+    await bot.send(event, "Function fixing, please wait for further update")
+    return
+#     command_args = args.extract_plain_text().split()
+#     if len(command_args) < 1:
+#         await bot.send(event, "Usage: repo info <repo>")
+#         return
 
-    from .repo_activity import GITHUB_TOKEN
-    repo = link_to_repo_name(command_args[0])
+#     from .repo_activity_new import github
+#     repo = link_to_repo_name(command_args[0])
 
-    headers = {}
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+#     repo = await github.rest.repos.async_get(
+#         owner=repo.split('/')[0], repo=repo.split('/')[1])
 
-    api_url = "https://api.github.com/repos/" + repo
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as response:
-                response.raise_for_status()
-                data = await response.json()
-                # Extract repository information
-                repo_name = data.get("full_name", "Unknown")
-                description = data.get("description", "No description")
-                owner = data.get("owner", {}).get("login", "Unknown")
-                url = data.get("html_url", "Unknown")
-                licence = data.get("license", {}).get("name", "Unknown")
-                language = data.get("language", "Unknown")
-                homepage = data.get("homepage", "Unknown")
-                default_branch = data.get("default_branch", "Unknown")
+#     try:
+#         async with aiohttp.ClientSession() as session:
+#             async with session.get(api_url, headers=headers) as response:
+#                 response.raise_for_status()
+#                 data = await response.json()
+#                 # Extract repository information
+#                 repo_name = data.get("full_name", "Unknown")
+#                 description = data.get("description", "No description")
+#                 owner = data.get("owner", {}).get("login", "Unknown")
+#                 url = data.get("html_url", "Unknown")
+#                 licence = data.get("license", {}).get("name", "Unknown")
+#                 language = data.get("language", "Unknown")
+#                 homepage = data.get("homepage", "Unknown")
+#                 default_branch = data.get("default_branch", "Unknown")
 
-                stars = data.get("stargazers_count", 0)
-                forks = data.get("forks", 0)
+#                 stars = data.get("stargazers_count", 0)
+#                 forks = data.get("forks", 0)
 
-                issue_count = data.get("open_issues_count", 0)
+#                 issue_count = data.get("open_issues_count", 0)
 
-                created = data.get("created_at", "Unknown")
-                updated = data.get("updated_at", "Unknown")
+#                 created = data.get("created_at", "Unknown")
+#                 updated = data.get("updated_at", "Unknown")
 
-                is_template = data.get("is_template", False)
-                is_private = data.get("private", False)
-                allow_fork = data.get("allow_forking", False)
-                is_fork = data.get("fork", False)
-                is_archived = data.get("archived", False)
+#                 is_template = data.get("is_template", False)
+#                 is_private = data.get("private", False)
+#                 allow_fork = data.get("allow_forking", False)
+#                 is_fork = data.get("fork", False)
+#                 is_archived = data.get("archived", False)
 
-                message = f'''**Repository Information**
-- Name: {repo_name}
-- Description: {description}
-- Owner: {owner}
-- URL: {url}
-- License: {licence}
-- Language: {language}
-- Homepage: {homepage}
-Default branch: {default_branch}
+#                 message = f'''**Repository Information**
+# - Name: {repo_name}
+# - Description: {description}
+# - Owner: {owner}
+# - URL: {url}
+# - License: {licence}
+# - Language: {language}
+# - Homepage: {homepage}
+# Default branch: {default_branch}
 
-Repo data
-Stars: {stars}
-Forks: {forks}
-Issue count: {issue_count}
+# Repo data
+# Stars: {stars}
+# Forks: {forks}
+# Issue count: {issue_count}
 
-Repo statics & status
-Created time: {created}
-Last updated: {updated}''' + \
-                          ('The repo is a template\n' if is_template else '') + \
-                          ('The repo is private repo\n' if is_private else '') + \
-                          ('' if allow_fork else 'The repo does not allow forks\n') + \
-                          ('The repo is a fork\n' if is_fork else '') + \
-                          ('The repo is archived\n' if is_archived else '')
-                message = MessageSegment.image(
-                    await md_to_pic(message))
-    except aiohttp.ClientResponseError as e:
-        message = (
-            f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
-        )
-        logger.error(message)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        message = f"Fatal error while fetching GitHub repo usage: {e}"
-        logger.error(message)
-    await bot.send(event, message)
+# Repo statics & status
+# Created time: {created}
+# Last updated: {updated}''' + \
+#                           ('The repo is a template\n' if is_template else '') + \
+#                           ('The repo is private repo\n' if is_private else '') + \
+#                           ('' if allow_fork else 'The repo does not allow forks\n') + \
+#                           ('The repo is a fork\n' if is_fork else '') + \
+#                           ('The repo is archived\n' if is_archived else '')
+#                 message = MessageSegment.image(
+#                     await md_to_pic(message))
+#     except aiohttp.ClientResponseError as e:
+#         message = (
+#             f"Failed to fetch GitHub repo usage: {e.status} - {e.message}"
+#         )
+#         logger.error(message)
+#     except Exception as e:  # pylint: disable=broad-exception-caught
+#         message = f"Fatal error while fetching GitHub repo usage: {e}"
+#         logger.error(message)
+#     await bot.send(event, message)
 
 
 @on_command("latest_release", aliases={"repo_release", "get_release"}).handle(
@@ -416,62 +404,64 @@ async def latest_release(
         bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Get the latest release of a repository."""
-    command_args = args.extract_plain_text().split()
-    if len(command_args) < 1:
-        await bot.send(event, "Usage: latest_release <repo>")
-        return
+    await bot.send(event, "Function fixing, please wait for further update")
+    return
+    # command_args = args.extract_plain_text().split()
+    # if len(command_args) < 1:
+    #     await bot.send(event, "Usage: latest_release <repo>")
+    #     return
 
-    repo = link_to_repo_name(command_args[0])
-    api_url = f"https://api.github.com/repos/{repo}/releases/latest"
-    headers = {}
-    from .repo_activity import GITHUB_TOKEN
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    # repo = link_to_repo_name(command_args[0])
+    # api_url = f"https://api.github.com/repos/{repo}/releases/latest"
+    # headers = {}
+    # from .repo_activity_new import GITHUB_TOKEN
+    # if GITHUB_TOKEN:
+    #     headers["Authorization"] = f"token {GITHUB_TOKEN}"
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as response:
-                if response.status == 404:
-                    await bot.send(event, f"No releases found for {repo}.")
-                    return
-                response.raise_for_status()
-                data = await response.json()
-                name = data.get("name", "No name")
-                tag = data.get("tag_name", "No tag")
-                url = data.get("html_url", "")
-                body = data.get("body", "No description")
-                published = data.get("published_at", "Unknown")
-                message = (
-                    f"**Latest Release for {repo}**\n"
-                    f"Name: {name}\n"
-                    f"Tag: {tag}\n"
-                    f"Published: {published}\n"
-                    f"URL: {url}\n"
-                    f"Description:\n{body}"
-                )
-                if config.github_send_in_markdown:
-                    message = MessageSegment.image(await md_to_pic(
-                        f"### Latest Release for {repo}\n"
-                        f"- Name: {name}\n"
-                        f"- Tag: {tag}\n"
-                        f"- Published: {published}\n"
-                        f"- URL: {url}\n"
-                        f"Details:\n"
-                        f"{body}"
-                    ))
-                elif config.github_send_detail_in_markdown:
-                    message = MessageSegment.text(
-                        f"### Latest Release for {repo}\n"
-                        f"- Name: {name}\n"
-                        f"- Tag: {tag}\n"
-                        f"- Published: {published}\n"
-                        f"- URL: {url}"
-                    ) + MessageSegment.image(await md_to_pic(body))
-                else:
-                    message = MessageSegment.text(message)
-                await bot.send(event, message)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        await bot.send(event, f"Error fetching latest release: {e}")
+    # try:
+    #     async with aiohttp.ClientSession() as session:
+    #         async with session.get(api_url, headers=headers) as response:
+    #             if response.status == 404:
+    #                 await bot.send(event, f"No releases found for {repo}.")
+    #                 return
+    #             response.raise_for_status()
+    #             data = await response.json()
+    #             name = data.get("name", "No name")
+    #             tag = data.get("tag_name", "No tag")
+    #             url = data.get("html_url", "")
+    #             body = data.get("body", "No description")
+    #             published = data.get("published_at", "Unknown")
+    #             message = (
+    #                 f"**Latest Release for {repo}**\n"
+    #                 f"Name: {name}\n"
+    #                 f"Tag: {tag}\n"
+    #                 f"Published: {published}\n"
+    #                 f"URL: {url}\n"
+    #                 f"Description:\n{body}"
+    #             )
+    #             if config.github_send_in_markdown:
+    #                 message = MessageSegment.image(await md_to_pic(
+    #                     f"### Latest Release for {repo}\n"
+    #                     f"- Name: {name}\n"
+    #                     f"- Tag: {tag}\n"
+    #                     f"- Published: {published}\n"
+    #                     f"- URL: {url}\n"
+    #                     f"Details:\n"
+    #                     f"{body}"
+    #                 ))
+    #             elif config.github_send_detail_in_markdown:
+    #                 message = MessageSegment.text(
+    #                     f"### Latest Release for {repo}\n"
+    #                     f"- Name: {name}\n"
+    #                     f"- Tag: {tag}\n"
+    #                     f"- Published: {published}\n"
+    #                     f"- URL: {url}"
+    #                 ) + MessageSegment.image(await md_to_pic(body))
+    #             else:
+    #                 message = MessageSegment.text(message)
+    #             await bot.send(event, message)
+    # except Exception as e:  # pylint: disable=broad-exception-caught
+    #     await bot.send(event, f"Error fetching latest release: {e}")
 
 
 @on_command("latest_commit", aliases={"repo_commit", "get_commit"}).handle(
@@ -480,40 +470,42 @@ async def latest_commit(
         bot: Bot, event: MessageEvent, args: Message = CommandArg()
 ):
     """Get the latest commit of a repository."""
-    command_args = args.extract_plain_text().split()
-    if len(command_args) < 1:
-        await bot.send(event, "Usage: latest_commit <repo>")
-        return
+    await bot.send(event, "Function fixing, please wait for further update")
+    return
+    # command_args = args.extract_plain_text().split()
+    # if len(command_args) < 1:
+    #     await bot.send(event, "Usage: latest_commit <repo>")
+    #     return
 
-    repo = link_to_repo_name(command_args[0])
-    api_url = f"https://api.github.com/repos/{repo}/commits"
-    headers = {}
-    from .repo_activity import GITHUB_TOKEN
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    # repo = link_to_repo_name(command_args[0])
+    # api_url = f"https://api.github.com/repos/{repo}/commits"
+    # headers = {}
+    # from .repo_activity_new import GITHUB_TOKEN
+    # if GITHUB_TOKEN:
+    #     headers["Authorization"] = f"token {GITHUB_TOKEN}"
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as response:
-                response.raise_for_status()
-                data = await response.json()
-                if not data:
-                    await bot.send(event, f"No commits found for {repo}.")
-                    return
-                commit = data[0]
-                sha = commit.get("sha", "Unknown")
-                author = commit.get("commit", {}).get("author", {}).get("name", "Unknown")
-                date = commit.get("commit", {}).get("author", {}).get("date", "Unknown")
-                message_text = commit.get("commit", {}).get("message", "No message")
-                url = commit.get("html_url", "")
-                message = (
-                    f"**Latest Commit for {repo}**\n"
-                    f"SHA: {sha}\n"
-                    f"Author: {author}\n"
-                    f"Date: {date}\n"
-                    f"URL: {url}\n"
-                    f"Message:\n{message_text}"
-                )
-                await bot.send(event, MessageSegment.text(message))
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        await bot.send(event, f"Error fetching latest commit: {e}")
+    # try:
+    #     async with aiohttp.ClientSession() as session:
+    #         async with session.get(api_url, headers=headers) as response:
+    #             response.raise_for_status()
+    #             data = await response.json()
+    #             if not data:
+    #                 await bot.send(event, f"No commits found for {repo}.")
+    #                 return
+    #             commit = data[0]
+    #             sha = commit.get("sha", "Unknown")
+    #             author = commit.get("commit", {}).get("author", {}).get("name", "Unknown")
+    #             date = commit.get("commit", {}).get("author", {}).get("date", "Unknown")
+    #             message_text = commit.get("commit", {}).get("message", "No message")
+    #             url = commit.get("html_url", "")
+    #             message = (
+    #                 f"**Latest Commit for {repo}**\n"
+    #                 f"SHA: {sha}\n"
+    #                 f"Author: {author}\n"
+    #                 f"Date: {date}\n"
+    #                 f"URL: {url}\n"
+    #                 f"Message:\n{message_text}"
+    #             )
+    #             await bot.send(event, MessageSegment.text(message))
+    # except Exception as e:  # pylint: disable=broad-exception-caught
+    #     await bot.send(event, f"Error fetching latest commit: {e}")
