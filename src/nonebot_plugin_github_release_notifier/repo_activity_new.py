@@ -130,9 +130,9 @@ async def send_message(
             await bot.send_private_msg(user_id=target_id, message=Message(msg)
                                        if isinstance(msg, MessageSegment) else msg)
     except Exception as e:
-        logger.opt(exception=True).error(
+        logger.error(
             f"Failed to send message to {msg_type} {target_id}: "
-            f"{e.__class__}:{e}"
+            f"{e.__class__}: {e}"
         )
 
 
@@ -203,7 +203,7 @@ async def fetch_github_data(
         if not response:
             response = []
     except RetryError as e:
-        logger.opt(exception=True).error(
+        logger.error(
             "Failed to fetch data from Github API after 3 attempts:\n" +
             f"{e.last_attempt.__class__}: {e.last_attempt}"
         )
@@ -279,7 +279,7 @@ async def process_issues_and_prs(
             await get_issue_data(owner, repo, content_type)
             ).parsed_data
     except RetryError as e:
-        logger.opt(exception=True).error(
+        logger.error(
             "Failed to fetch data from Github API after 3 attempts:\n" +
             f"{e.last_attempt.__class__}: {e.last_attempt}"
         )

@@ -9,7 +9,6 @@
 
 __author__ = "yanyongyu"
 
-from datetime import date
 from hashlib import sha256
 
 from pydantic_core import to_json
