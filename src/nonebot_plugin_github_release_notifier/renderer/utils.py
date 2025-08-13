@@ -3,7 +3,6 @@ from colorsys import rgb_to_hls
 from githubkit.versions.latest import models
 
 
-
 async def get_repo_from_issue(issue: models.Issue) -> models.FullRepository:
     """Get repository from issue"""
     from ..repo_activity_new import github
