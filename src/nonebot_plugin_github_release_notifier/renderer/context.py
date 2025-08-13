@@ -11,7 +11,12 @@ __author__ = "yanyongyu"
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Self, Literal, TypeAlias, TypedDict
+from typing import Literal, TypedDict
+
+try:
+    from typing import Self, TypeAlias
+except ImportError:
+    from typing_extensions import Self, TypeAlias
 
 from githubkit.versions.latest import models
 
