@@ -63,7 +63,6 @@
 | GITHUB_TOKEN | 否 | 空字符串 | 用于访问 GitHub API 的 Token |
 | GITHUB_RETRIES | 否 | 3 | 刷新最大重试次数 |
 | GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
-| GITHUB_DISABLE_WHEN_FAIL | 否 | False | 在获取仓库数据失败时禁用配置 |
 | GITHUB_LANGUAGE | 否 | "en_us" | 发送的模板语言 |
 | GITHUB_SEND_FALIURE_GROUP | 否 | True | 失败时是否通知群聊 |
 | GITHUB_SEND_FALIURE_SUPERUSER | 否 | False | 失败时是否通知超级用户 |

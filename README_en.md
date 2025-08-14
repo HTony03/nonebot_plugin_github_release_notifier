@@ -63,7 +63,6 @@ Add the following required configuration items to the `.env` file in your NoneBo
 | GITHUB_TOKEN | No | Empty string | Token for accessing the GitHub API |
 | GITHUB_RETRIES | No | 3 | Maximum retry attempts for refreshing |
 | GITHUB_RETRY_DELAY | No | 5 | Delay between each refresh retry (seconds) |
-| GITHUB_DISABLE_WHEN_FAIL | No | False | Disable configuration when repository data retrieval fails |
 | GITHUB_LANGUAGE | No | "en_us" | Language for sending templates |
 | GITHUB_SEND_FALIURE_GROUP | No | True | Notify group on failure |
 | GITHUB_SEND_FALIURE_SUPERUSER | No | False | Notify superuser on failure |

@@ -41,11 +41,6 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     The delay (in seconds) between each validation retry.
     """
 
-    github_disable_when_fail: bool = False
-    """
-    Disable the configuration when failing to retrieve repository data.
-    """
-
     github_language: str = "en_us"
     """
     language for markdown sending templates

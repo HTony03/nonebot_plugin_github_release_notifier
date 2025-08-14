@@ -2,7 +2,7 @@ from githubkit import GitHub, UnauthAuthStrategy, TokenAuthStrategy, Response
 from githubkit.versions.latest.models import (Issue, PullRequest, Commit, Release,
                                               PullRequestSimple, IssueComment, PullRequestReviewComment)
 from githubkit.exception import (
-    RequestFailed, RequestError,
+    PrimaryRateLimitExceeded, RequestFailed, RequestError,
     RequestTimeout, RateLimitExceeded
 )
 from typing import Literal, Union, Sequence  # , TypeVar
@@ -98,7 +98,7 @@ async def validate_github_token(retries=3, retry_delay=5) -> None:
             "Proceed without authentication."
         )
         logger.error(
-            f"exception: {e.last_attempt.__class__}: "
+            f"exception: {e.last_attempt.__class__.__name__}: "
             f"{e.last_attempt.exception()}"
         )
         github = GitHub(UnauthAuthStrategy(), auto_retry=False)
@@ -132,7 +132,7 @@ async def send_message(
     except Exception as e:
         logger.error(
             f"Failed to send message to {msg_type} {target_id}: "
-            f"{e.__class__}: {e}"
+            f"{e.__class__.__name__}: {e}"
         )
 
 
@@ -163,37 +163,25 @@ async def fetch_github_data(
             owner: str,
             repository: str
     ) -> Sequence[Commit | Issue | PullRequestSimple | Release] | None:
-        try:
-            match endpoint:
-                case "commits":
-                    got_repo: GitHubResponse = await github_client.rest.repos.async_list_commits(
-                        repo=repository, owner=owner
-                    )
-                case "issues":
-                    got_repo: GitHubResponse = await github_client.rest.issues.async_list_for_repo(
-                        repo=repository, owner=owner
-                    )
-                case "pulls":
-                    got_repo: GitHubResponse = await github_client.rest.pulls.async_list(
-                        repo=repository, owner=owner
-                    )
-                case "releases":
-                    got_repo: GitHubResponse = await github_client.rest.repos.async_list_releases(
-                        repo=repository, owner=owner
-                    )
-                case _:
-                    raise ValueError(f"Unknown endpoint: {endpoint}")
-        except (RequestFailed) as e:
-            logger.error(
-                f"Failed to fetch data from GitHub API: {e.__class__}: {e}"
-            )
-            return None
-
-        if got_repo.is_error:
-            # releases接口404时返回空列表而不是异常
-            if got_repo.status_code == 404:
-                return None
-            raise RuntimeError("Failed to fetch data from GitHub API")
+        match endpoint:
+            case "commits":
+                got_repo: GitHubResponse = await github_client.rest.repos.async_list_commits(
+                    repo=repository, owner=owner
+                )
+            case "issues":
+                got_repo: GitHubResponse = await github_client.rest.issues.async_list_for_repo(
+                    repo=repository, owner=owner
+                )
+            case "pulls":
+                got_repo: GitHubResponse = await github_client.rest.pulls.async_list(
+                    repo=repository, owner=owner
+                )
+            case "releases":
+                got_repo: GitHubResponse = await github_client.rest.repos.async_list_releases(
+                    repo=repository, owner=owner
+                )
+            case _:
+                raise ValueError(f"Unknown endpoint: {endpoint}")
         return got_repo.parsed_data
 
     owner, repository = repo.split('/')
@@ -205,7 +193,7 @@ async def fetch_github_data(
     except RetryError as e:
         logger.error(
             "Failed to fetch data from Github API after 3 attempts:\n" +
-            f"{e.last_attempt.__class__}: {e.last_attempt}"
+            f"{e.last_attempt.__class__.__name__}: {e.last_attempt.exception}"
         )
         raise RuntimeError(
             "Failed to fetch data from GitHub API after 3 retries"
@@ -281,7 +269,7 @@ async def process_issues_and_prs(
     except RetryError as e:
         logger.error(
             "Failed to fetch data from Github API after 3 attempts:\n" +
-            f"{e.last_attempt.__class__}: {e.last_attempt}"
+            f"{e.last_attempt.__class__.__name__}: {e.last_attempt.exception()}"
         )
         raise RuntimeError(
             "Failed to fetch data from GitHub API after 3 retries"
@@ -333,7 +321,7 @@ async def process_issues_and_prs(
             comments = comments_response.parsed_data
         except RetryError as e:
             logger.error(f"Failed to fetch Comments for issue/pull request id {item.number}: "
-                         f"{e.last_attempt.__class__}:{e.last_attempt}")
+                         f"{e.last_attempt.__class__.__name__}:{e.last_attempt.exception()}")
             continue
 
         if comments:
@@ -724,7 +712,7 @@ async def check_repo_updates() -> None:
                             html = (
                                 f"<p>GitHub API Error:</p>"
                                 f"<p style='white-space=pre-wrap'>"
-                                f"{e.__cause__.last_attempt.__class__}: "  # pylint: disable=no-member  # type: ignore
+                                f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
                                 f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
                                 ).replace('\n', '</br>')
                             # Handle GitHub API errors
@@ -741,9 +729,6 @@ async def check_repo_updates() -> None:
                                         bot, user_id, MessageSegment.image(pic), "user"
                                     )
 
-                            # Disable configuration if needed
-                            if config.github_disable_when_fail:
-                                ...
                             current_hour = datetime.now(timezone.utc).replace(
                                 minute=0, second=0, microsecond=0
                             )
