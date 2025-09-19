@@ -57,8 +57,9 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
 def link_to_repo_name(link: str) -> str:
     """Convert a repository link to its name."""
     repo = link.replace("https://", "") \
-        .replace("http://", "") \
-        .replace(".git", "")
+        .replace("http://", "")
+        #.replace(".git", "")
+    repo = repo if not repo[-4:] == '.git' else repo[:-4]
     if len(repo.split("/")) == 2:
         return repo
     return "/".join(repo.split("/")[1:3])
