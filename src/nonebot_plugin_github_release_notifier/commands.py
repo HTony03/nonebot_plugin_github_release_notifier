@@ -26,6 +26,13 @@ from .db_action import (
 )
 from .pic_process import html_to_pic, md_to_pic
 
+async def send_message(bot:Bot, event:MessageEvent, message:MessageSegment | Message):
+    """Send a message to the appropriate target based on the event type."""
+    try:
+        await bot.send(event, message)
+    except Exception as e:
+        logger.error(f"Failed to send message: {e.__class__.__name__}:{e}")
+
 
 @on_command(
     "check_api_usage", aliases={"api_usage", "github_usage"}, priority=5
@@ -33,9 +40,9 @@ from .pic_process import html_to_pic, md_to_pic
 async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
     from .repo_activity_new import github
-    resp = github.rest.rate_limit.get()
-    logger.info(resp)
     try:
+        resp = github.rest.rate_limit.get()
+        logger.info(resp)
         parsed = resp.parsed_data
         reset_time = datetime.fromtimestamp(parsed.rate.reset).strftime(
             "%Y-%m-%d %H:%M:%S"
@@ -47,7 +54,7 @@ async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
             f"   - Limit: {parsed.rate.limit}\n"
             f"   - Reset Time: {reset_time}"
         )
-        await bot.send(event, MessageSegment.text(message))
+        await send_message(bot, event, MessageSegment.text(message))
     except Exception:
         logger.opt(exception=True).error("Failed to fetch GitHub API usage")
 
@@ -80,7 +87,7 @@ repo_group = CommandGroup(
 ).handle()
 @repo_group.command("add").handle()
 async def add_repo(
-        bot: Bot, event: MessageEvent, args: Message = CommandArg()
+        bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()
 ):
     """Add a new repository mapping."""
     from .repo_activity_new import github
@@ -90,18 +97,14 @@ async def add_repo(
         return
 
     repo = link_to_repo_name(command_args[0])
-    group_id = (
-        str(event.group_id)
-        if isinstance(event, GroupMessageEvent)
-        else command_args[1]
-        if len(command_args) > 1
-        else None
-    )
+    group_id = event.group_id
+
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def fetch_repo(repo: str) -> Response[FullRepository]:
         return await github.rest.repos.async_get(
             owner=repo.split('/')[0], repo=repo.split('/')[1]
         )
+
     try:
         await fetch_repo(repo)
     except RetryError as e:
@@ -109,12 +112,8 @@ async def add_repo(
         await bot.send(event, f"Failed to fetch repository data for {repo}.")
         await bot.send(event, "Please check if the repository exists, whether it is public.")
         await bot.send(event, "To proceed with private repositories, please contact the bot "
-                       "admin to generate a github token accessible to the repo.")
+                              "admin to generate a github token accessible to the repo.")
         await bot.send(event, f"error details: {e.last_attempt.__class__.__name__}: {e.last_attempt.exception()}")
-        return
-
-    if not group_id:
-        await bot.send(event, "Group ID is required for private messages.")
         return
 
     add_group_repo_data(group_id, repo,
@@ -322,6 +321,8 @@ async def repo_info(
     """Show repository information."""
     await bot.send(event, "Function fixing, please wait for further update")
     return
+
+
 #     command_args = args.extract_plain_text().split()
 #     if len(command_args) < 1:
 #         await bot.send(event, "Usage: repo info <repo>")

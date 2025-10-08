@@ -6,12 +6,34 @@ DB_FILE = DATA_DIR / "github_release_notifier.db"
 group_data = {}
 
 
-# Initialize the database
 def init_database() -> None:
-    """Initialize the SQLite database and create
-    the necessary table if it doesn't exist."""
+    """
+    Initialize the SQLite database and create necessary tables.
+
+    This function creates all required tables and ensures they have
+    the correct schema by adding any missing columns.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+
+    try:
+        # Create all required tables
+        _create_tables(cursor)
+        # Update schema for existing installations
+        _update_table_schema(cursor)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _create_tables(cursor: sqlite3.Cursor) -> None:
+    """
+    Create all required database tables.
+
+    Args:
+        cursor: SQLite database cursor
+    """
+    # Create last_processed table for tracking repository updates
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS last_processed (
             repo TEXT PRIMARY KEY,
@@ -21,6 +43,8 @@ def init_database() -> None:
             releases TEXT
         )
     """)
+
+    # Create group_config table for group-repository configurations
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS group_config (
             group_id TEXT,
@@ -36,36 +60,55 @@ def init_database() -> None:
             PRIMARY KEY (group_id, repo)
         )
     """)
+
+    # Create tables for tracking issue and PR commit hashes
     cursor.execute("""
-            CREATE TABLE IF NOT EXISTS prs (
-                repo TEXT,
-                id INT,
-                latest_commit_hash TEXT,
-                PRIMARY KEY (id, repo)
-            )
-        """)
+        CREATE TABLE IF NOT EXISTS prs (
+            repo TEXT,
+            id INT,
+            latest_commit_hash TEXT,
+            PRIMARY KEY (id, repo)
+        )
+    """)
+
     cursor.execute("""
-            CREATE TABLE IF NOT EXISTS issues (
-                repo TEXT,
-                id INT,
-                latest_commit_hash TEXT,
-                PRIMARY KEY (id, repo)
-            )
-        """)
+        CREATE TABLE IF NOT EXISTS issues (
+            repo TEXT,
+            id INT,
+            latest_commit_hash TEXT,
+            PRIMARY KEY (id, repo)
+        )
+    """)
+
+
+def _update_table_schema(cursor: sqlite3.Cursor) -> None:
+    """
+    Update table schema for backward compatibility.
+    
+    Adds missing columns to existing tables and handles column renames.
+    
+    Args:
+        cursor: SQLite database cursor
+    """
+    # Check existing columns in group_config table
     cursor.execute("PRAGMA table_info(group_config)")
     columns = [row[1] for row in cursor.fetchall()]
-    if "release_folder" not in columns:
-        cursor.execute("ALTER TABLE group_config ADD COLUMN release_folder TEXT")
-    if "send_release" not in columns:
-        cursor.execute("ALTER TABLE group_config ADD COLUMN send_release BOOLEAN")
-    if "send_issue_comment" not in columns:
-        cursor.execute("ALTER TABLE group_config ADD COLUMN send_issue_comment BOOLEAN")
-    if "send_pr_comment" not in columns:
-        cursor.execute("ALTER TABLE group_config ADD COLUMN send_pr_comment BOOLEAN")
+
+    # Add missing columns if they don't exist
+    missing_columns = [
+        ("release_folder", "TEXT"),
+        ("send_release", "BOOLEAN"),
+        ("send_issue_comment", "BOOLEAN"),
+        ("send_pr_comment", "BOOLEAN")
+    ]
+
+    for column_name, column_type in missing_columns:
+        if column_name not in columns:
+            cursor.execute(f"ALTER TABLE group_config ADD COLUMN {column_name} {column_type}")
+
+    # Handle legacy column rename
     if "groupid" in columns:
         cursor.execute('ALTER TABLE group_config RENAME COLUMN groupid TO group_id;')
-    conn.commit()
-    conn.close()
 
 
 def load_last_processed() -> dict:
@@ -115,49 +158,98 @@ def save_last_processed(data: dict) -> None:
     conn.close()
 
 
-def load_group_configs(fast=True) -> dict:
-    """Load the group configurations from the SQLite database."""
+def load_group_configs(fast=False) -> dict:
+    """
+    Load the group configurations from the SQLite database.
+    
+    Args:
+        fast (bool): If True, return cached data without database query
+        
+    Returns:
+        dict: Dictionary mapping group_id to list of repository configurations
+    """
     global group_data
+
+    # Return cached data if fast mode is enabled
     if fast:
         return group_data
+
+    # Fetch data from database
+    rows = _fetch_group_config_rows()
+
+    # Convert database rows to structured dictionary
+    group_data = _convert_rows_to_group_data(rows)
+
+    return group_data
+
+
+def _fetch_group_config_rows() -> list:
+    """
+    Fetch all group configuration rows from database.
+    
+    Returns:
+        list: List of tuples containing group configuration data
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM group_config")
     rows = cursor.fetchall()
     conn.close()
+    return rows
 
-    # Convert rows to a dictionary
+
+def _convert_rows_to_group_data(rows: list) -> dict:
+    """
+    Convert database rows to structured group configuration dictionary.
+    
+    Args:
+        rows (list): List of database row tuples
+        
+    Returns:
+        dict: Structured group configuration data
+    """
     group_data = {}
+
     for row in rows:
-        (
-            group_id,
-            repo,
-            commits,
-            prs,
-            issues,
-            releases,
-            send_folder,
-            send_release,
-            send_issue_comment,
-            send_pr_comment
-        ) = row
+        group_id, config_data = _parse_config_row(row)
+
+        # Initialize group data if not exists
         if group_id not in group_data:
-            data = []
-        else:
-            data: list = group_data[group_id]
-        data.append({
-            "repo": repo,
-            "commit": commits if commits else False,
-            "issue": issues if issues else False,
-            "pull_req": prs if prs else False,
-            "release": releases if releases else False,
-            "send_release": send_release if send_release else False,
-            "release_folder": send_folder if send_folder else None,
-            "send_issue_comment": send_issue_comment if send_issue_comment else False,
-            "send_pr_comment": send_pr_comment if send_pr_comment else False,
-        })
-        group_data[group_id] = data
+            group_data[group_id] = []
+
+        group_data[group_id].append(config_data)
+    
     return group_data
+
+
+def _parse_config_row(row: tuple) -> tuple[str, dict]:
+    """
+    Parse a single database row into group_id and configuration data.
+    
+    Args:
+        row (tuple): Database row containing configuration data
+        
+    Returns:
+        tuple: (group_id, config_dict)
+    """
+    (
+        group_id, repo, commits, prs, issues, releases,
+        send_folder, send_release, send_issue_comment, send_pr_comment
+    ) = row
+
+    config_data = {
+        "repo": repo,
+        "commit": bool(commits),
+        "issue": bool(issues),
+        "pull_req": bool(prs),
+        "release": bool(releases),
+        "send_release": bool(send_release),
+        "release_folder": send_folder,
+        "send_issue_comment": bool(send_issue_comment),
+        "send_pr_comment": bool(send_pr_comment),
+    }
+
+    return group_id, config_data
 
 
 def add_group_repo_data(
@@ -200,12 +292,38 @@ issues, prs, releases, release_folder, send_release, send_issue_comment, send_pr
 
 def change_group_repo_cfg(group_id: int | str, repo: str,
                           config_type: str, value: bool | str) -> None:
-    """Change a group's repository configuration in the SQLite database."""
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    group_id = int(group_id)
+    """
+    Change a group's repository configuration in the SQLite database.
+    
+    Args:
+        group_id: The group identifier
+        repo: Repository name in format "owner/repo"
+        config_type: Configuration type to change
+        value: New value for the configuration
+        
+    Raises:
+        ValueError: If config_type is invalid
+    """
+    # Validate and map configuration type to database column
+    column = _validate_and_map_config_type(config_type)
 
-    # Map type to database column
+    # Update database
+    _update_group_config_in_db(group_id, repo, column, value)
+
+
+def _validate_and_map_config_type(config_type: str) -> str:
+    """
+    Validate configuration type and map to database column name.
+    
+    Args:
+        config_type: Configuration type to validate
+        
+    Returns:
+        str: Corresponding database column name
+        
+    Raises:
+        ValueError: If config_type is invalid
+    """
     column_mapping = {
         "commit": "commits",
         "issue": "issues",
@@ -220,33 +338,53 @@ def change_group_repo_cfg(group_id: int | str, repo: str,
         "send_issue_comment": "send_issue_comment",
         "send_pr_comment": "send_pr_comment",
     }
+
     if config_type not in column_mapping:
-        logger.error(
-            f"Error: Invalid type format '{config_type}'. "
-            f"Must be one of {list(column_mapping.keys())}."
-        )
-        conn.close()
-        raise ValueError(
+        error_msg = (
             f"Invalid type format '{config_type}'. "
             f"Must be one of {list(column_mapping.keys())}."
         )
+        logger.error(f"Error: {error_msg}")
+        raise ValueError(error_msg)
 
-    # Get the correct column name
-    column = column_mapping[config_type]
+    return column_mapping[config_type]
 
-    cursor.execute(f"""
-        UPDATE group_config
-        SET {column}=?
-        WHERE group_id=? AND repo=?
-    """, (value, group_id, repo))
 
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
+def _update_group_config_in_db(group_id: int | str, repo: str,
+                               column: str, value: bool | str) -> None:
+    """
+    Update group configuration in database.
+    
+    Args:
+        group_id: The group identifier
+        repo: Repository name
+        column: Database column name to update
+        value: New value for the column
+    """
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    group_id = int(group_id)
+
+    try:
+        cursor.execute(f"""
+            UPDATE group_config
+            SET {column}=?
+            WHERE group_id=? AND repo=?
+        """, (value, group_id, repo))
+
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def remove_group_repo_data(group_id: int | str, repo: str) -> None:
-    """Remove a group's repository configuration from the SQLite database."""
+    """
+    Remove a group's repository configuration from the SQLite database.
+
+    :param group_id: Group id to remove
+    :param repo: the repo to remove
+    :return None
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     group_id = int(group_id)

@@ -55,13 +55,23 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     """
     Send messages in Markdown pics.
     """
+
     github_send_detail_in_markdown: bool = True
     """
     Send detailed messages in Markdown pics.
     influenced types:
-    - pr
-    - issue
     - release
+    """
+
+    github_comment_check_amount: int = 20
+    """
+    The amount of issues/prs to check for comment each time when refresh.
+    due to GitHub REST API limitations, the pull requests would also being got when fetching issues.
+    the actual amount of issues fetched would be less than this value.
+    
+    Meanwhile, the larger the value is, the longer it would take to refresh every repo issue/pull comments.
+    the smaller the value is, the less amount of issue/pr comments would be checked each time,
+    amount of time would spent (estimated) = (value + 1) * 5 (seconds)
     """
 
     github_upload_remove_older_ver: bool = True
@@ -90,6 +100,13 @@ def get_translation(language: str | None = None) -> dict:
 try:
     config: Config = get_plugin_config(Config)
     t = get_translation(config.github_language)
+    if any([
+        config.github_retries < 0,
+        config.github_retry_delay < 0,
+        config.github_comment_check_amount < 0,
+        config.github_theme not in ['light', 'dark']
+    ]):
+        raise ValueError("Numeric config values must be non-negative or invalid theme")
 except (ValueError, TypeError) as e:
     logger.error(f"read config failed: {e}, using default config")
     config: Config = Config()

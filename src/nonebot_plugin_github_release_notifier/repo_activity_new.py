@@ -10,6 +10,9 @@ from typing import Literal, Union, Sequence  # , TypeVar
 from tenacity import retry, stop_after_attempt, wait_fixed, RetryError
 from datetime import datetime, timezone
 import os
+import hashlib
+import json
+import time
 
 import aiohttp
 from nonebot import get_bot, get_driver
@@ -49,19 +52,76 @@ max_retries: int = config.github_retries
 delay: int = config.github_retry_delay
 temp_disabled: dict = {}
 api_cache: dict = {}
+# Enhanced cache for issues/PRs and comments with expiry time
+enhanced_cache: dict = {}
 temp_commit: list = []
 github = GitHub(UnauthAuthStrategy(), auto_retry=False)
 
 config_template: dict = t
 run_lock: bool = False
 
+# Cache expiry time in seconds (5 minutes)
+CACHE_EXPIRY_TIME = 300
 
-async def validate_github_token(retries=3, retry_delay=5) -> None:
+
+def generate_cache_key(repo: str, endpoint: str, **kwargs) -> str:
     """
-    Validate the GitHub token by making a test request,
-    with retries on SSL errors.
+    Generate a cache key based on repo, endpoint and additional parameters.
     """
+    data_dict = {
+        'repo': repo,
+        'endpoint': endpoint,
+        **kwargs
+    }
+    # Sort keys to ensure consistent hash
+    return hashlib.sha256(str(data_dict).encode()).hexdigest()
+
+
+def is_cache_valid(cache_entry: dict) -> bool:
+    """
+    Check if cache entry is still valid based on timestamp.
+    """
+    return (time.time() - cache_entry.get('timestamp', 0)) < CACHE_EXPIRY_TIME
+
+
+def get_from_cache(cache_key: str):
+    """
+    Get data from enhanced cache if valid.
+    """
+    if cache_key in enhanced_cache:
+        entry = enhanced_cache[cache_key]
+        if is_cache_valid(entry):
+            logger.debug(f'Cache hit for key: {cache_key[:16]}...')
+            return entry['data']
+        # Remove expired cache
+        del enhanced_cache[cache_key]
+        logger.debug(f'Cache expired for key: {cache_key[:16]}...')
+    return None
+
+
+def save_to_cache(cache_key: str, data) -> None:
+    """
+    Save data to enhanced cache with timestamp.
+    """
+    enhanced_cache[cache_key] = {
+        'data': data,
+        'timestamp': time.time()
+    }
+    logger.debug(f'Cache saved for key: {cache_key[:16]}...')
+
+
+async def validate_github_token(retries: int = 3, retry_delay: int = 5) -> None:
+    '''
+    Validate the provided GitHub token.
+
+    :param retries: times of retries for validation
+    :type retries: int
+    :param retry_delay: delay between retries in seconds
+    :type retry_delay: int
+    :return: None
+    '''
     global github
+    # Github(auto_retry=False) to ignore built-in retries leading to uncatchable tracebacks
     token: str | None = config.github_token
     if not token:
         logger.warning(
@@ -112,6 +172,15 @@ async def send_message(
 ) -> None:
     """
     Send a message to the specified group or user.
+
+    :param msg_type: "type" of the target, either "group" or "user"
+    :type msg_type: str['group', 'user']
+    :param target_id: group id or user id
+    :type target_id: int | str
+    :param msg: the message to send
+    :type msg: MessageSegment | Message
+    :param bot: bot interface from nonebot.adapters.onebot.v11
+    :type bot: Bot
     """
     if msg_type not in ["group", "user"]:
         raise ValueError(
@@ -125,10 +194,10 @@ async def send_message(
     try:
         if msg_type == "group":
             await bot.send_group_msg(group_id=target_id, message=Message(msg)
-                                     if isinstance(msg, MessageSegment) else msg)
+            if isinstance(msg, MessageSegment) else msg)
         elif msg_type == "user":
             await bot.send_private_msg(user_id=target_id, message=Message(msg)
-                                       if isinstance(msg, MessageSegment) else msg)
+            if isinstance(msg, MessageSegment) else msg)
     except Exception as e:
         logger.error(
             f"Failed to send message to {msg_type} {target_id}: "
@@ -143,6 +212,13 @@ async def fetch_github_data(
     """
     Fetch data from the GitHub API
     for a specific repo and endpoint.
+
+    :param repo: GitHub repository in "owner/repo" format
+    :type repo: str
+    :param endpoint: github api endpoint ("commits", "issues", "pulls", "releases")
+    :type endpoint: str['commits', 'issues', 'pulls', 'releases']
+    :raises ValueError: if the endpoint is invalid
+    :raises RuntimeError from githubkit.exception: if the API request fails after retries
     """
 
     cache = api_cache.get(repo, {}).get(endpoint, None)
@@ -197,7 +273,7 @@ async def fetch_github_data(
         )
         raise RuntimeError(
             "Failed to fetch data from GitHub API after 3 retries"
-        ) from e
+        ) from e.last_attempt
 
     api_cache.setdefault(repo, {})[endpoint] = response if response else []
     return response
@@ -212,60 +288,97 @@ async def process_issues_and_prs(
 ) -> None:
     """
     Process issues and pull requests, checking for new items and comments.
+
+    :param repo: GitHub repository in "owner/repo" format
+    :type repo: str
+    :param owner: Owner of the GitHub repository
+    :type owner: str
+    :param content_type: Type of content to process ("issues" or "prs")
+    :type content_type: str['issues', 'prs']
+    :param group_id: ID of the group to send notifications to
+    :type group_id: int
+    :param bot: Bot instance to send messages
+    :type bot: Bot(nonebot.adapters.onebot.v11.Bot)
     """
     if content_type not in ["issues", "prs"]:
         raise ValueError(
             f"Invalid type: {content_type}. Must be 'issues' or 'prs'."
         )
 
-    if content_type == "prs":
-        logger.warning("Still WIP, auto exiting")
-        return
-
     # Get last processed ID
     repo_key = f'{owner}/{repo}'
     last_id = get_commit_data(repo_key, 0, content_type)
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(delay))
-    async def get_issue_data(owner: str, repo: str, content_type: str) -> IssueResponse:
-        # Fetch latest data
-        if content_type == "issues":
-            response: IssueResponse = (
-                await github.rest.issues.async_list_for_repo(
-                    owner=owner,
-                    repo=repo,
-                    state="all",
-                    sort="created",
-                    per_page=100
-                )
+    async def get_issue_data_cached(owner: str, repo: str) -> IssueResponse:
+        # Generate cache key for issues/PRs list
+        cache_key = generate_cache_key(
+            repo=f"{owner}/{repo}",
+            endpoint="list_issues",
+            state="all",
+            sort="created",
+            per_page=config.github_comment_check_amount,
+            content_type=content_type
+        )
+
+        # Check cache first
+        cached_data = get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        # Fetch latest data if not in cache
+        response: IssueResponse = (
+            await github.rest.issues.async_list_for_repo(
+                owner=owner,
+                repo=repo,
+                state="all",
+                sort="created",
+                per_page=config.github_comment_check_amount
             )
-        else:
-            response: IssueResponse = (
-                await github.rest.pulls.async_list(
-                    owner=owner,
-                    repo=repo,
-                    state="all",
-                    sort="created",
-                    per_page=100,
-                    direction='desc'
-                )
-            )
+        )
+
+        # Save to cache
+        save_to_cache(cache_key, response)
         return response
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(delay))
-    async def get_comment_data(owner: str, repo: str, num: int) -> Response[list[IssueComment]]:
-        # Fetch latest data
+    async def get_comment_data_cached(owner: str, repo: str, num: int) -> Response[list[IssueComment]]:
+        # Generate cache key for specific issue/PR comments
+        cache_key = generate_cache_key(
+            repo=f"{owner}/{repo}",
+            endpoint="issue_comments",
+            issue_number=num
+        )
+
+        # Check cache first
+        cached_data = get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        # Fetch latest data if not in cache
         response: Response[list[IssueComment]] = await github.rest.issues.async_list_comments(
             owner=owner,
             repo=repo,
             issue_number=num
         )
+
+        # Save to cache
+        save_to_cache(cache_key, response)
         return response
+
+    def get_type(data: list, type_: str) -> list:
+        if type_ == "issues":
+            return [item for item in data if not item.pull_request]
+        elif type_ == "prs":
+            return [item for item in data if item.pull_request]
+        else:
+            return []
 
     try:
         response: list[Issue] | list[PullRequestSimple] | list[PullRequest] = (
-            await get_issue_data(owner, repo, content_type)
-            ).parsed_data
+            await get_issue_data_cached(owner, repo)
+        ).parsed_data
+        response: list = get_type(response, content_type)
     except RetryError as e:
         logger.error(
             "Failed to fetch data from Github API after 3 attempts:\n" +
@@ -276,51 +389,38 @@ async def process_issues_and_prs(
         ) from e
 
     # Check for new issues/PRs
-    latest_item = response[0]
-    if not last_id or latest_item.id != int(last_id):
-        # New issue/PR found
-        if isinstance(latest_item, Issue):
+    if response:
+        latest_item = response[0]
+        if not last_id or latest_item.id != int(last_id):
+            # New issue/PR found
             image_data = await issue_opened_to_image(
                 repo=latest_item.repository,
                 issue=latest_item
             )
-        else:
-            # TODO: Implement PR opened image rendering
-            # image_data = await issue_opened_to_image(
-            #     repo=latest_item.repository,
-            #     issue=latest_item
-            # )
-            return
-        await send_message(
-            bot,
-            group_id,
-            MessageSegment.image(image_data)
-        )
-        # await send_message(
-        #     bot,
-        #     group_id,
-        #     MessageSegment.image(await issue_to_image(latest_item))
-        # )
-        temp_commit.append({
-            "key": repo_key,
-            "hash": str(latest_item.id),
-            "id": 0,
-            "content_type": content_type
-        })
-        # Update last processed ID
+            await send_message(
+                bot,
+                group_id,
+                MessageSegment.image(image_data)
+            )
+            temp_commit.append({
+                "key": repo_key,
+                "hash": str(latest_item.id),
+                "id": 0,
+                "content_type": content_type
+            })
 
     # Check for new comments on existing issues/PRs
     for item in response:
         stored_comment_id = get_commit_data(repo_key, item.id, content_type)
 
-        # Fetch comments for this issue/PR
+        # Fetch comments for this issue/PR with caching
         try:
-            comments_response: Response[list[IssueComment]] = await get_comment_data(
+            comments_response: Response[list[IssueComment]] = await get_comment_data_cached(
                 owner, repo, item.number
             )
             comments = comments_response.parsed_data
         except RetryError as e:
-            logger.error(f"Failed to fetch Comments for issue/pull request id {item.number}: "
+            logger.error(f"Failed to fetch Comments for issue/pull request id {item.number} repo {repo_key}: "
                          f"{e.last_attempt.__class__.__name__}:{e.last_attempt.exception()}")
             continue
 
@@ -328,26 +428,28 @@ async def process_issues_and_prs(
             latest_comment = comments[-1]
             if not stored_comment_id or latest_comment.id != int(stored_comment_id):
                 # New comment found
-                if isinstance(item, Issue):
+                if not stored_comment_id:
+                    unp_commits = [comments[-1]]
+                else:
+                    for comment in comments:
+                        if comment.id == int(stored_comment_id):
+                            unp_commits = comments[comments.index(comment) + 1:]
+                            break
+                    else:
+                        unp_commits = comments
+
+                for comment in unp_commits:
                     image_data = await issue_commented_to_image(
                         repo=item.repository,
                         issue=item,
-                        comment=latest_comment
+                        comment=comment
                     )
-                else:
-                    # TODO: Implement PR comment image rendering
-                    # image_data = await issue_commented_to_image(
-                    #     repo=item.repository,
-                    #     issue=item,
-                    #     comment=latest_comment
-                    # )
-                    return
 
-                await send_message(
-                    bot,
-                    group_id,
-                    MessageSegment.image(image_data)
-                )
+                    await send_message(
+                        bot,
+                        group_id,
+                        MessageSegment.image(image_data)
+                    )
 
                 # Save the latest comment ID
                 temp_commit.append({
@@ -369,6 +471,8 @@ async def send_release_files(
 ) -> None:
     """Send release assets to group if enabled."""
     group_config = load_group_configs().get(str(group_id), {})
+    logger.warning('WIP')
+    return
 
     if not group_config.get('send_release', False) and not debugging:
         return
@@ -501,7 +605,7 @@ async def notify(
         last_processed: dict,
 ) -> None:
     """Send notifications for new data (commits, issues, PRs, releases)."""
-    latest_data: list[Commit | Issue | PullRequest | PullRequestSimple | Release] = data[:5]\
+    latest_data: list[Commit | Issue | PullRequest | PullRequestSimple | Release] = data[:5] \
         if isinstance(data, list) else [data]
 
     for item in latest_data:
@@ -582,9 +686,9 @@ async def notify(
                     splited: list[str] = message.split(markdown_text)
                     pic = await md_to_pic(markdown_text)
                     msg_all = (
-                        MessageSegment.text(splited[0]) +
-                        MessageSegment.image(pic) +
-                        MessageSegment.text(splited[1])
+                            MessageSegment.text(splited[0]) +
+                            MessageSegment.image(pic) +
+                            MessageSegment.text(splited[1])
                     )
                 else:
                     msg_all = MessageSegment.text(message)
@@ -634,9 +738,26 @@ def reset_temp_disabled_configs() -> None:
         del temp_disabled[key]
 
 
+def clean_expired_cache() -> None:
+    """Clean expired cache entries to prevent memory buildup."""
+    expired_keys = []
+    for key, entry in enhanced_cache.items():
+        if not is_cache_valid(entry):
+            expired_keys.append(key)
+
+    for key in expired_keys:
+        del enhanced_cache[key]
+
+    if expired_keys:
+        logger.debug(f'Cleaned {len(expired_keys)} expired cache entries')
+
+
 async def check_repo_updates() -> None:
     """Check for new commits, issues, PRs, and releases for all repos and notify groups."""
+    # Clear both caches at the start
     api_cache.clear()
+    clean_expired_cache()
+
     try:
         global run_lock
         if run_lock:
@@ -657,6 +778,9 @@ async def check_repo_updates() -> None:
 
         for group_id, repo_configs in group_repo_dict.items():
             group_id = int(group_id)
+
+            t = datetime.now()
+            logger.info(f'start processing group {group_id}, start: {t}')
             for repo_config in repo_configs:
                 repo = repo_config.get("repo")
                 if not repo:
@@ -669,35 +793,19 @@ async def check_repo_updates() -> None:
                     ("pull_req", "pulls"),
                     ("release", "releases")
                 ]:
-                    if (repo_config.get(data_type, False) and
-                            not temp_disabled.get((group_id, repo, data_type))):
-                        try:
-                            # Skip if comments are not enabled for issues/PRs
-                            if (data_type == 'issue' and
-                                    not repo_config.get("send_issue_comment", False)):
-                                pass
-                            elif (data_type == 'pull_req' and
-                                  not repo_config.get("send_pr_comment", False)):
-                                pass
-                            elif (data_type == 'issue' and
-                                    repo_config.get("send_issue_comment", False)):
-                                await process_issues_and_prs(repo.split('/')[1], repo.split('/')[0], "issues",
-                                                             group_id, bot)
-                                continue
-                            elif (data_type == 'pull_req' and
-                                  repo_config.get("send_pr_comment", False)):
+                    try:
+                        if endpoint == 'pulls':
+                            if repo_config.get('send_pr_comment', False):
                                 await process_issues_and_prs(repo.split('/')[1], repo.split('/')[0], "prs",
                                                              group_id, bot)
                                 continue
-                            # # For issues and PRs, use enhanced processing
-                            # if data_type in ['issue', 'pull_req']:
-                            #     owner, repository = repo.split('/')
-                            #     content_type = 'issues' if data_type == 'issue' else 'prs'
-                            #     await process_issues_and_prs(
-                            #         repository, owner, content_type, group_id, bot, last_processed
-                            #     )
-                            # else:
-                            # For commits and releases, use traditional method
+                        elif endpoint == 'issues':
+                            if repo_config.get('send_issue_comment', False):
+                                await process_issues_and_prs(repo.split('/')[1], repo.split('/')[0], "issues",
+                                                             group_id, bot)
+                                continue
+                        if (repo_config.get(data_type, False) and
+                                not temp_disabled.get((group_id, repo, data_type))):
                             data = await fetch_github_data(repo, endpoint)
                             if data:
                                 await notify(
@@ -708,39 +816,47 @@ async def check_repo_updates() -> None:
                                     data_type=data_type,
                                     last_processed=last_processed,
                                 )
-                        except RuntimeError as e:
-                            html = (
-                                f"<p>GitHub API Error:</p>"
-                                f"<p style='white-space=pre-wrap'>"
-                                f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
-                                f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
-                                ).replace('\n', '</br>')
-                            # Handle GitHub API errors
-                            if config.github_send_faliure_group:
-                                pic = await html_to_pic(html)
+                        logger.info(
+                            f'processed repo {repo} endp {endpoint} group {group_id}, spent {((datetime.now() - t).total_seconds()):.3f}')
+                        t = datetime.now()
+                    except RuntimeError as e:
+                        # html = (
+                        #     f"<p>GitHub API Error:</p>"
+                        #     f"<p style='white-space=pre-wrap'>"
+                        #     f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
+                        #     f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
+                        #     ).replace('\n', '</br>')
+                        mark = (
+                            "### GitHub API Error\n"
+                            f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
+                            f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
+                        )
+                        # Handle GitHub API errors
+                        if config.github_send_faliure_group:
+                            pic = await md_to_pic(mark)
+                            await send_message(
+                                bot, group_id, MessageSegment.image(pic)
+                            )
+
+                        if config.github_send_faliure_superuser:
+                            for user_id in superusers:
+                                pic = await md_to_pic(mark)
                                 await send_message(
-                                    bot, group_id, MessageSegment.image(pic)
+                                    bot, user_id, MessageSegment.image(pic), "user"
                                 )
 
-                            if config.github_send_faliure_superuser:
-                                for user_id in superusers:
-                                    pic = await html_to_pic(html)
-                                    await send_message(
-                                        bot, user_id, MessageSegment.image(pic), "user"
-                                    )
-
-                            current_hour = datetime.now(timezone.utc).replace(
-                                minute=0, second=0, microsecond=0
-                            )
-                            temp_disabled[(group_id, repo, data_type)] = current_hour
+                        current_hour = datetime.now(timezone.utc).replace(
+                            minute=0, second=0, microsecond=0
+                        )
+                        temp_disabled[(group_id, repo, data_type)] = current_hour
 
         save_last_processed(last_processed)
         for x in temp_commit:
             save_commit_data(
-                        x.get("key"),
-                        x.get("hash"),
-                        x.get("id"),
-                        x.get("content_type")
-                    )
+                x.get("key"),
+                x.get("hash"),
+                x.get("id"),
+                x.get("content_type")
+            )
     finally:
         run_lock = False

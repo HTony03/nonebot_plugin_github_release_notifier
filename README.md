@@ -20,6 +20,8 @@
 
 本插件用于监控 GitHub 仓库发布并发送通知。
 
+**本项目为纯GitHub REST API实现，非webhook，不依赖相关服务**
+
 其他语言 | Other languages: [English](/README_en.md)
 
 ## 📖 介绍

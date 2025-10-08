@@ -86,4 +86,4 @@ async def test_config_exists() -> None:
             f.write("passed")
         logger.success("Repository config checking success, would skip the process afterwards")
     logger.info("if you want to re-check the config from database, please delete "
-                f"the checked.lock file in location: {DATA_DIR / 'checked.lock'}")
+                f"the 'checked.lock' file in location: {DATA_DIR / 'checked.lock'}")
