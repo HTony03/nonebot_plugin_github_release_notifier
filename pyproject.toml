@@ -28,11 +28,11 @@ dependencies = [
     "nonebot-adapter-onebot~=2.4",
     "nonebot-plugin-apscheduler~=0.3",
     "nonebot-plugin-localstore~=0.7",
-    "nonebot-plugin-htmlrender~=0.5",
+    "nonebot-plugin-htmlrender~=0.7.0a2",
     "nonebot2~=2.3",
     "packaging~=25.0",
     "jinja2~=3.1",
-    "markdown-it-py>=3,<5",
+    "markdown-it-py~=3.0",
     "mdit-py-emoji~=0.1",
     "humanize~=4.12",
     "mdit-py-plugins~=0.4",
@@ -40,7 +40,7 @@ dependencies = [
     "tenacity~=9.1",
     "pathlib~=1.0",
     "linkify-it-py~=2.0",
-    "typing_extensions~=4.14"
+    "typing-extensions~=4.14",
 ]
 
 [project.urls]
