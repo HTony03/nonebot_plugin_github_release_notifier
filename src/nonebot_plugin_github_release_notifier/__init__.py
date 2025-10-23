@@ -59,12 +59,6 @@ if DEBUG:
 
 # TODO: Reformat database
 
-
-def refresh_data_from_db() -> None:
-    """Refresh the group-to-repo mapping from the database."""
-    group_repo_dict = load_group_configs(False)
-
-
 # Register the initialization function to run when the bot starts
 driver: Driver = get_driver()
 driver.on_startup(post_plugin_setup)

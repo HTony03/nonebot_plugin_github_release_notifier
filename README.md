@@ -6,7 +6,7 @@
 </div>
 
 <p align="center">
-  <a href="./LICENSE">
+  <a href="https://github.com/HTony03/nonebot_plugin_github_release_notifier/LICENSE">
     <img src="https://img.shields.io/github/license/HTony03/nonebot_plugin_github_release_notifier.svg" alt="license">
   </a>
   <a href="https://pypi.python.org/pypi/nonebot-plugin-github-release-notifier">
@@ -22,7 +22,7 @@
 
 **本项目为纯GitHub REST API实现，非webhook，不依赖相关服务**
 
-其他语言 | Other languages: [English](/README_en.md)
+其他语言 | Other languages: [English](https://github.com/HTony03/nonebot_plugin_github_release_notifier/README_en.md)
 
 ## 📖 介绍
 
@@ -111,7 +111,7 @@
 
 ## LICENCE
 
-本插件按照MIT协议传播，相关LICENCE见[此处](./LICENSE)
+本插件按照MIT协议传播，相关LICENCE见[此处](https://github.com/HTony03/nonebot_plugin_github_release_notifier/LICENSE)
 
 ## Releases
 

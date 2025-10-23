@@ -3,6 +3,16 @@ from nonebot.log import logger
 from .config import DATA_DIR
 
 DB_FILE = DATA_DIR / "github_release_notifier.db"
+CONFIG_KEYS = [
+    "commit", "commits"
+    "issue", "issues"
+    "pull_req", "prs"
+    "release", "releases",
+    "send_release",
+    "send_issue_comment",
+    "send_pr_comment",
+    "release_folder"
+]
 group_data = {}
 
 

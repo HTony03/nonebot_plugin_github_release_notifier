@@ -55,7 +55,8 @@ api_cache: dict = {}
 # Enhanced cache for issues/PRs and comments with expiry time
 enhanced_cache: dict = {}
 temp_commit: list = []
-github = GitHub(UnauthAuthStrategy(), auto_retry=False)
+github = GitHub(UnauthAuthStrategy(), auto_retry=False) \
+    if not config.github_token else GitHub(TokenAuthStrategy(config.github_token))
 
 config_template: dict = t
 run_lock: bool = False
@@ -108,61 +109,6 @@ def save_to_cache(cache_key: str, data) -> None:
         'timestamp': time.time()
     }
     logger.debug(f'Cache saved for key: {cache_key[:16]}...')
-
-
-async def validate_github_token(retries: int = 3, retry_delay: int = 5) -> None:
-    '''
-    Validate the provided GitHub token.
-
-    :param retries: times of retries for validation
-    :type retries: int
-    :param retry_delay: delay between retries in seconds
-    :type retry_delay: int
-    :return: None
-    '''
-    global github
-    # Github(auto_retry=False) to ignore built-in retries leading to uncatchable tracebacks
-    token: str | None = config.github_token
-    if not token:
-        logger.warning(
-            "No GitHub token provided. Proceeding without authentication."
-        )
-        github = GitHub(UnauthAuthStrategy(), auto_retry=False)
-        return
-
-    auth_github = GitHub(TokenAuthStrategy(token), auto_retry=False)
-
-    @retry(stop=stop_after_attempt(retries), wait=wait_fixed(retry_delay))
-    async def token_valid() -> None:
-        global github
-        try:
-            await auth_github.rest.repos.async_get(
-                owner="HTony03",
-                repo="nonebot_plugin_github_release_notifier"
-            )
-            logger.info("GitHub token is valid.")
-            github = auth_github
-        except (RequestFailed, RateLimitExceeded):
-            logger.error(
-                "Invalid GitHub token received. "
-                "Proceed without authentication."
-            )
-            github = GitHub(UnauthAuthStrategy(), auto_retry=False)
-            return
-
-    try:
-        await token_valid()
-    except RetryError as e:
-        logger.error(
-            "GitHub token validation failed after multiple attempts. "
-            "Proceed without authentication."
-        )
-        logger.error(
-            f"exception: {e.last_attempt.__class__.__name__}: "
-            f"{e.last_attempt.exception()}"
-        )
-        github = GitHub(UnauthAuthStrategy(), auto_retry=False)
-
 
 async def send_message(
         bot: Bot,
@@ -267,13 +213,20 @@ async def fetch_github_data(
         if not response:
             response = []
     except RetryError as e:
+        # Prefer the last underlying exception from tenacity
+        last_exc = None
+        try:
+            last_exc = e.last_attempt.exception()
+        except Exception:
+            last_exc = None
+        root_exc = last_exc or e
         logger.error(
-            "Failed to fetch data from Github API after 3 attempts:\n" +
-            f"{e.last_attempt.__class__.__name__}: {e.last_attempt.exception}"
+            "Failed to fetch data from Github API after 3 attempts:\n"
+            f"{root_exc.__class__.__name__}: {root_exc}"
         )
         raise RuntimeError(
             "Failed to fetch data from GitHub API after 3 retries"
-        ) from e.last_attempt
+        ) from root_exc
 
     api_cache.setdefault(repo, {})[endpoint] = response if response else []
     return response
@@ -380,13 +333,20 @@ async def process_issues_and_prs(
         ).parsed_data
         response: list = get_type(response, content_type)
     except RetryError as e:
+        # Bubble up the last underlying exception for clarity
+        last_exc = None
+        try:
+            last_exc = e.last_attempt.exception()
+        except Exception:
+            last_exc = None
+        root_exc = last_exc or e
         logger.error(
-            "Failed to fetch data from Github API after 3 attempts:\n" +
-            f"{e.last_attempt.__class__.__name__}: {e.last_attempt.exception()}"
+            "Failed to fetch data from Github API after 3 attempts:\n"
+            f"{root_exc.__class__.__name__}: {root_exc}"
         )
         raise RuntimeError(
             "Failed to fetch data from GitHub API after 3 retries"
-        ) from e
+        ) from root_exc
 
     # Check for new issues/PRs
     if response:
@@ -778,9 +738,6 @@ async def check_repo_updates() -> None:
 
         for group_id, repo_configs in group_repo_dict.items():
             group_id = int(group_id)
-
-            t = datetime.now()
-            logger.info(f'start processing group {group_id}, start: {t}')
             for repo_config in repo_configs:
                 repo = repo_config.get("repo")
                 if not repo:
@@ -816,20 +773,31 @@ async def check_repo_updates() -> None:
                                     data_type=data_type,
                                     last_processed=last_processed,
                                 )
-                        logger.info(
-                            f'processed repo {repo} endp {endpoint} group {group_id}, spent {((datetime.now() - t).total_seconds()):.3f}')
-                        t = datetime.now()
                     except RuntimeError as e:
-                        # html = (
-                        #     f"<p>GitHub API Error:</p>"
-                        #     f"<p style='white-space=pre-wrap'>"
-                        #     f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
-                        #     f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
-                        #     ).replace('\n', '</br>')
+                        # Build a robust error message from the root cause
+                        cause = e.__cause__
+                        err_name = e.__class__.__name__
+                        err_msg = str(e)
+                        if cause is not None:
+                            attempt = getattr(cause, "last_attempt", None)
+                            if attempt is not None:
+                                try:
+                                    last_exc = attempt.exception()
+                                    if last_exc:
+                                        err_name = last_exc.__class__.__name__
+                                        err_msg = str(last_exc)
+                                    else:
+                                        err_name = cause.__class__.__name__
+                                        err_msg = str(cause)
+                                except Exception:
+                                    err_name = cause.__class__.__name__
+                                    err_msg = str(cause)
+                            else:
+                                err_name = cause.__class__.__name__
+                                err_msg = str(cause)
+
                         mark = (
-                            "### GitHub API Error\n"
-                            f"{e.__cause__.last_attempt.__class__.__name__}: "  # pylint: disable=no-member  # type: ignore
-                            f"{e.__cause__.last_attempt.exception()}"  # pylint: disable=no-member  # type: ignore
+                            "### GitHub API Error\n" f"{err_name}: {err_msg}"
                         )
                         # Handle GitHub API errors
                         if config.github_send_faliure_group:

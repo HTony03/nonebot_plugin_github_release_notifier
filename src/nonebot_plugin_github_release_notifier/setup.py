@@ -56,7 +56,7 @@ def pre_plugin_setup() -> None:
 
 async def post_plugin_setup() -> None:
     """Post plugin setup function."""
-    await validate_github_token(config.github_retries, config.github_retry_delay)
+    # await validate_github_token(config.github_retries, config.github_retry_delay)
     await test_config_exists()
     await check_plugin_version()
 

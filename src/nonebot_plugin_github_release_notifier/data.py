@@ -1,3 +1,4 @@
+import pydantic
 
 class Folder:
     folder_id: str = ''
