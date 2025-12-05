@@ -214,7 +214,7 @@ def get_translation() -> dict:
     #
     # if not translation_file.exists():
     #     logger.error(f"Failed to fetch translation file for lang: {language}, using default(en_us)")
-    translation_file = Path(__file__).parent / "lang" / config.github_language
+    translation_file = Path(__file__).parent / "lang" / (config.github_language + ".json")
 
     try:
         with open(translation_file, 'r', encoding='utf-8') as f:

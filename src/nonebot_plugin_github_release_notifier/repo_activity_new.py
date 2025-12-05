@@ -552,7 +552,7 @@ def format_message(
         return "Unknown data type."
 
     return config_template.get(data_type,
-                               "<unknown format, please report to the developer (with the language config)>"
+                               "###unknown format, please report to the developer (with the language config)###"
                                ).format(**item)
 
 

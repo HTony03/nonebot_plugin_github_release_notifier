@@ -11,7 +11,6 @@ from packaging.version import Version
 # noinspection PyPackageRequirements
 from nonebot import logger
 
-from .repo_activity_new import validate_github_token
 from .db_action import init_database, DB_FILE, load_group_configs, remove_group_repo_data
 from .config import config, DATA_DIR
 
