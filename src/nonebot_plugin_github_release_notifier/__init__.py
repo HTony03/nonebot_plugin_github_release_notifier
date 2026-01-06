@@ -20,7 +20,7 @@ from .commands import repo_group
 from .config import Config, config
 from .debugs import debugs
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 DEBUG: bool = config.github_dbg
 
 __plugin_meta__ = PluginMetadata(

@@ -221,11 +221,11 @@ async def fetch_github_data(
             last_exc = None
         root_exc = last_exc or e
         logger.error(
-            "Failed to fetch data from Github API after 3 attempts:\n"
+            f"Failed to fetch data from Github API repo {repo} endpoint {endpoint} after 3 attempts:\n"
             f"{root_exc.__class__.__name__}: {root_exc}"
         )
         raise RuntimeError(
-            "Failed to fetch data from GitHub API after 3 retries"
+            f"Failed to fetch data from GitHub API repo:{repo} endpoint {endpoint} after 3 retries"
         ) from root_exc
 
     api_cache.setdefault(repo, {})[endpoint] = response if response else []
