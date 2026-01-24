@@ -240,6 +240,12 @@ async def initialize_repo_timestamps(repo: str) -> None:
     as already processed, so only new items created after adding the repo
     will trigger notifications.
     
+    The function performs two types of initialization:
+    1. Records timestamps of the latest items in the last_processed table
+    2. Records issue/PR IDs and latest comment IDs in the issues/prs tables
+       - Uses id=0 as a special key to track the most recent issue/PR itself
+       - Uses id=<issue_id> to track the most recent comment on that issue/PR
+    
     :param repo: GitHub repository in "owner/repo" format
     :type repo: str
     """
@@ -285,7 +291,8 @@ async def initialize_repo_timestamps(repo: str) -> None:
                                 
                                 if filtered_items:
                                     latest_filtered = filtered_items[0]
-                                    # Store the latest issue/PR ID (id=0 means tracking the latest item)
+                                    # Store the latest issue/PR ID in the database with special key id=0
+                                    # This tracks when a completely new issue/PR is created
                                     save_commit_data(repo, str(latest_filtered.id), 0, content_type)
                                     
                                     # Also store latest comment ID for this issue/PR if comments exist
