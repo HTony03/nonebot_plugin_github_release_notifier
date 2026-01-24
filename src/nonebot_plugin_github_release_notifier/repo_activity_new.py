@@ -232,6 +232,65 @@ async def fetch_github_data(
     return response
 
 
+async def initialize_repo_timestamps(repo: str) -> None:
+    """
+    Initialize last_processed timestamps for a newly added repository.
+    
+    This prevents flooding by marking all existing commits/issues/PRs/releases
+    as already processed, so only new items created after adding the repo
+    will trigger notifications.
+    
+    :param repo: GitHub repository in "owner/repo" format
+    :type repo: str
+    """
+    last_processed = load_last_processed()
+    
+    # Check if repo already has timestamps - if so, don't overwrite
+    if repo in last_processed:
+        logger.info(f"Repository {repo} already has timestamps, skipping initialization")
+        return
+    
+    timestamps = {}
+    current_time = datetime.now(timezone.utc).isoformat()
+    
+    # For each endpoint type, try to fetch the latest item and record its timestamp
+    for data_type, endpoint in [
+        ("commit", "commits"),
+        ("issue", "issues"),
+        ("pull_req", "pulls"),
+        ("release", "releases")
+    ]:
+        try:
+            data = await fetch_github_data(repo, endpoint)
+            if data and len(data) > 0:
+                # Get the timestamp of the most recent item
+                item = data[0]
+                if isinstance(item, Commit):
+                    timestamp = item.commit.author.date if item.commit.author else None
+                elif isinstance(item, (Issue, PullRequest, PullRequestSimple)):
+                    timestamp = item.created_at
+                elif isinstance(item, Release):
+                    timestamp = item.published_at
+                else:
+                    timestamp = None
+                
+                timestamps[data_type] = timestamp.isoformat() if timestamp else current_time
+            else:
+                # No items exist, use current time
+                timestamps[data_type] = current_time
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch {endpoint} for {repo} during initialization: "
+                f"{e.__class__.__name__}: {e}. Using current time."
+            )
+            timestamps[data_type] = current_time
+    
+    # Save the timestamps
+    last_processed[repo] = timestamps
+    save_last_processed(last_processed)
+    logger.info(f"Initialized timestamps for repository {repo} to prevent flooding")
+
+
 async def process_issues_and_prs(
         repo: str,
         owner: str,

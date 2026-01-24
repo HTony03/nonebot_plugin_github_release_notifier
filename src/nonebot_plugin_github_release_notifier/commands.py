@@ -90,7 +90,7 @@ async def add_repo(
         bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()
 ):
     """Add a new repository mapping."""
-    from .repo_activity_new import github
+    from .repo_activity_new import github, initialize_repo_timestamps
     command_args = args.extract_plain_text().split()
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo add <repo> [group_id]")
@@ -123,6 +123,10 @@ async def add_repo(
                         config.github_default_config_setting,
                         None,
                         False)
+    
+    # Initialize timestamps to prevent flooding on first check
+    await initialize_repo_timestamps(repo)
+    
     await bot.send(event, f"Added repository mapping: {group_id} -> {repo}")
     logger.info(f"Added repository mapping: {group_id} -> {repo}")
 
