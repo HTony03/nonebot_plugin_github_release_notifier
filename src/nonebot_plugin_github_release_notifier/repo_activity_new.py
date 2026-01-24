@@ -252,6 +252,7 @@ async def initialize_repo_timestamps(repo: str) -> None:
     
     timestamps = {}
     current_time = datetime.now(timezone.utc).isoformat()
+    owner, repository = repo.split('/')
     
     # For each endpoint type, try to fetch the latest item and record its timestamp
     for data_type, endpoint in [
@@ -269,6 +270,46 @@ async def initialize_repo_timestamps(repo: str) -> None:
                     timestamp = item.commit.author.date if item.commit.author else None
                 elif isinstance(item, (Issue, PullRequest, PullRequestSimple)):
                     timestamp = item.created_at
+                    
+                    # For issues endpoint, initialize tracking for both issues and PRs
+                    # to prevent comment flooding
+                    if endpoint == "issues":
+                        for content_type in ["issues", "prs"]:
+                            try:
+                                # Filter to get only issues or only PRs
+                                filtered_items = [
+                                    i for i in data
+                                    if (content_type == "prs" and i.pull_request) or
+                                       (content_type == "issues" and not i.pull_request)
+                                ]
+                                
+                                if filtered_items:
+                                    latest_filtered = filtered_items[0]
+                                    # Store the latest issue/PR ID (id=0 means tracking the latest item)
+                                    save_commit_data(repo, str(latest_filtered.id), 0, content_type)
+                                    
+                                    # Also store latest comment ID for this issue/PR if comments exist
+                                    try:
+                                        comments_resp = await github.rest.issues.async_list_comments(
+                                            owner=owner,
+                                            repo=repository,
+                                            issue_number=latest_filtered.number
+                                        )
+                                        comments = comments_resp.parsed_data
+                                        if comments:
+                                            latest_comment = comments[-1]
+                                            save_commit_data(repo, str(latest_comment.id), latest_filtered.id, content_type)
+                                    except Exception as e:
+                                        logger.debug(
+                                            f"Could not fetch comments for {content_type[:-1]} #{latest_filtered.number} "
+                                            f"during initialization: {e.__class__.__name__}"
+                                        )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to initialize {content_type} tracking for {repo}: "
+                                    f"{e.__class__.__name__}: {e}"
+                                )
+                    
                 elif isinstance(item, Release):
                     timestamp = item.published_at
                 else:
@@ -289,6 +330,8 @@ async def initialize_repo_timestamps(repo: str) -> None:
     last_processed[repo] = timestamps
     save_last_processed(last_processed)
     logger.info(f"Initialized timestamps for repository {repo} to prevent flooding")
+
+
 
 
 async def process_issues_and_prs(
