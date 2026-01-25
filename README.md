@@ -22,7 +22,7 @@
 
 **本项目为纯GitHub REST API实现，非webhook，不依赖相关服务**
 
-其他语言 | Other languages: [English](https://github.com/HTony03/nonebot_plugin_github_release_notifier/README_en.md)
+其他语言 | Other languages: [English](https://github.com/HTony03/nonebot_plugin_github_release_notifier/blob/main/README_en.md)
 
 ## 📖 介绍
 
@@ -60,19 +60,20 @@
 
 在 nonebot2 项目的 `.env` 文件中添加下表中的必填配置：
 
-| 配置项 | 必填 | 默认值 | 说明 |
-|:-----:|:----:|:----:|:----:|
-| GITHUB_TOKEN | 否 | 空字符串 | 用于访问 GitHub API 的 Token |
-| GITHUB_RETRIES | 否 | 3 | 刷新最大重试次数 |
-| GITHUB_RETRY_DELAY | 否 | 5 | 每次刷新重试之间的延迟（秒） |
-| GITHUB_LANGUAGE | 否 | "en_us" | 发送的模板语言 |
-| GITHUB_SEND_FALIURE_GROUP | 否 | True | 失败时是否通知群聊 |
-| GITHUB_SEND_FALIURE_SUPERUSER | 否 | False | 失败时是否通知超级用户 |
-| GITHUB_DEFAULT_CONFIG_SETTING | 否 | True | 添加仓库时默认监控所有事件 |
-| GITHUB_SEND_IN_MARKDOWN | 否 | False | 是否以 Markdown 图片方式发送消息 |
-| GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 | True | 是否以 Markdown 图片方式发送详细信息（pr/issue/release）|
-| GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 | True | 上传 release 文件时是否移除旧版本( in development) |
-| GITHUB_THEME | 否 | "dark" | （针对issue/pull request comment）渲染页面风格 ["light","dark"] | 
+| 配置项 | 必填 |   默认值   |                          说明                           |
+|:-----:|:----:|:-------:|:-----------------------------------------------------:|
+| GITHUB_TOKEN | 否 |  空字符串   |                用于访问 GitHub API 的 Token                |
+| GITHUB_RETRIES | 否 |    3    |                       刷新最大重试次数                        |
+| GITHUB_RETRY_DELAY | 否 |    5    |                    每次刷新重试之间的延迟（秒）                     |
+| GITHUB_LANGUAGE | 否 | "en_us" |                        发送的模板语言                        |
+| GITHUB_SEND_FALIURE_GROUP | 否 |  True   |                       失败时是否通知群聊                       |
+| GITHUB_SEND_FALIURE_SUPERUSER | 否 |  False  |                      失败时是否通知超级用户                      |
+| GITHUB_DEFAULT_CONFIG_SETTING | 否 |  True   |                     添加仓库时默认监控所有事件                     |
+| GITHUB_SEND_IN_MARKDOWN | 否 |  False  |                 是否以 Markdown 图片方式发送消息                 |
+| GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 |  True   |       是否以 Markdown 图片方式发送详细信息（pr/issue/release）       |
+| GITHUB_SEND_PREV_DETAILS | 否 |  False  |                    是否发送添加repo前的数据                     |
+| GITHUB_UPLOAD_REMOVE_OLDER_VER | 否 |  True   |        上传 release 文件时是否移除旧版本( in development)         |
+| GITHUB_THEME | 否 | "dark"  | （针对issue/pull request comment）渲染页面风格 ["light","dark"] | 
 
 `v0.1.9` 删除了对于`.env`添加群组repo的适配, 请使用指令使用相关功能
 
