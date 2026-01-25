@@ -336,7 +336,7 @@ async def initialize_repo_timestamps(repo: str) -> None:
     # Save the timestamps
     last_processed[repo] = timestamps
     save_last_processed(last_processed)
-    logger.info(f"Initialized timestamps for repository {repo} to prevent flooding")
+    logger.info(f"Initialized timestamps for repository {repo}")
 
 
 

@@ -58,19 +58,20 @@ Before use, ensure that the `SUPERUSERS` configuration item in NoneBot2 is set.
 
 Add the following required configuration items to the `.env` file in your NoneBot2 project:
 
-| Config Item | Required | Default | Description |
-|:-----------:|:--------:|:-------:|:-----------:|
-| GITHUB_TOKEN | No | Empty string | Token for accessing the GitHub API |
-| GITHUB_RETRIES | No | 3 | Maximum retry attempts for refreshing |
-| GITHUB_RETRY_DELAY | No | 5 | Delay between each refresh retry (seconds) |
-| GITHUB_LANGUAGE | No | "en_us" | Language for sending templates |
-| GITHUB_SEND_FALIURE_GROUP | No | True | Notify group on failure |
-| GITHUB_SEND_FALIURE_SUPERUSER | No | False | Notify superuser on failure |
-| GITHUB_DEFAULT_CONFIG_SETTING | No | True | Monitor all events by default when adding a repo |
-| GITHUB_SEND_IN_MARKDOWN | No | False | Send messages as Markdown images |
-| GITHUB_SEND_DETAIL_IN_MARKDOWN | No | True | Send details (pr/issue/release) as Markdown images |
-| GITHUB_UPLOAD_REMOVE_OLDER_VER | No | True | Remove old versions when uploading release files (in development) |
-| GITHUB_THEME | No | "dark" | (For issue/pull request comments) Page rendering style ["light","dark"] |
+| Config Item | Required | Default |                               Description                               |
+|:-----------:|:--------:|:-------:|:-----------------------------------------------------------------------:|
+| GITHUB_TOKEN |    No    | Empty string |                   Token for accessing the GitHub API                    |
+| GITHUB_RETRIES |    No    | 3 |                  Maximum retry attempts for refreshing                  |
+| GITHUB_RETRY_DELAY |    No    | 5 |               Delay between each refresh retry (seconds)                |
+| GITHUB_LANGUAGE |    No    | "en_us" |                     Language for sending templates                      |
+| GITHUB_SEND_FALIURE_GROUP |    No    | True |                         Notify group on failure                         |
+| GITHUB_SEND_FALIURE_SUPERUSER |    No    | False |                       Notify superuser on failure                       |
+| GITHUB_DEFAULT_CONFIG_SETTING |    No    | True |            Monitor all events by default when adding a repo             |
+| GITHUB_SEND_IN_MARKDOWN |    No    | False |                    Send messages as Markdown images                     |
+| GITHUB_SEND_DETAIL_IN_MARKDOWN |    No    | True |           Send details (pr/issue/release) as Markdown images            |
+| GITHUB_SEND_PREV_DETAILS |    No    |  False  |       Whether send previous details when adding a new repository        |
+| GITHUB_UPLOAD_REMOVE_OLDER_VER |    No    | True |    Remove old versions when uploading release files (in development)    |
+| GITHUB_THEME |    No    | "dark" | (For issue/pull request comments) Page rendering style ["light","dark"] |
 
 `v0.1.9` removed support for adding group repo via `.env`. Please use commands for related features.
 

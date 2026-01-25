@@ -123,9 +123,9 @@ async def add_repo(
                         config.github_default_config_setting,
                         None,
                         False)
-    
-    # Initialize timestamps to prevent flooding on first check
-    await initialize_repo_timestamps(repo)
+    if not config.github_send_prev_details:
+        # Initialize timestamps to prevent flooding on first check
+        await initialize_repo_timestamps(repo)
     
     await bot.send(event, f"Added repository mapping: {group_id} -> {repo}")
     logger.info(f"Added repository mapping: {group_id} -> {repo}")

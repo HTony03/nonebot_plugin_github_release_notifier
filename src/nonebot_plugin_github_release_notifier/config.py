@@ -90,6 +90,11 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     - release
     """
 
+    github_send_prev_details: bool = False
+    """
+    Whether send previous details when adding a new repository. 
+    """
+
     github_comment_check_amount: int = 20
     """
     The amount of issues/prs to check for comment each time when refresh.
