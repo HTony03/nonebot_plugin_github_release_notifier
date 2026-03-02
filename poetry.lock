@@ -719,14 +719,14 @@ files = [
 
 [[package]]
 name = "githubkit"
-version = "0.14.5"
+version = "0.14.6"
 description = "GitHub SDK for Python"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "githubkit-0.14.5-py3-none-any.whl", hash = "sha256:a653261c59ca26dbb5d03a6856b10722eb6d79ac05157231ed4d6bca38b9ae8f"},
-    {file = "githubkit-0.14.5.tar.gz", hash = "sha256:0238d0922c7a77654a40593729009b2274e1d7a56c7c321c4f84ee1b0017cc5a"},
+    {file = "githubkit-0.14.6-py3-none-any.whl", hash = "sha256:de405fc28b959697b49a19e238e8cb12e3a09679cf356525458e4782c7a15f60"},
+    {file = "githubkit-0.14.6.tar.gz", hash = "sha256:4f6015cdb64ed12883bb64781fc7ceb6f13aa72b08b6aea37a762f72183e4072"},
 ]
 
 [package.dependencies]
