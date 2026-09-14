@@ -1540,14 +1540,14 @@ pydantic = ">=1.10.0,<2.5.0 || >2.5.0,<2.5.1 || >2.5.1,<3.0.0"
 
 [[package]]
 name = "nonebot-plugin-htmlrender"
-version = "0.7.1"
+version = "0.7.2"
 description = "通过浏览器渲染图片"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "nonebot_plugin_htmlrender-0.7.1-py3-none-any.whl", hash = "sha256:4b7803f4233e292a72d2cbc80ce55ff63e8ce500ba3c83b9dbc54c402ed4dc6f"},
-    {file = "nonebot_plugin_htmlrender-0.7.1.tar.gz", hash = "sha256:66b3fe3c420e163eed2c6f74ceeb8da4bfcc7aefd65a1b3730e9f1a862b0cc58"},
+    {file = "nonebot_plugin_htmlrender-0.7.2-py3-none-any.whl", hash = "sha256:353479bec15e235244ed47e7a74f997140d719ac70c7ad401def3edcb3b42dfc"},
+    {file = "nonebot_plugin_htmlrender-0.7.2.tar.gz", hash = "sha256:ad85bc734f25cd91582b3ff1315031aed61a8c16d53ab5e0013140262e4a8820"},
 ]
 
 [package.dependencies]
