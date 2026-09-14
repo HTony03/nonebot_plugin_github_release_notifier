@@ -5,8 +5,7 @@ from githubkit.exception import (
     PrimaryRateLimitExceeded, RequestFailed, RequestError,
     RequestTimeout, RateLimitExceeded
 )
-from typing import Literal, Union, Sequence  # , TypeVar
-# from githubkit.versions.v2022_11_28.types.group_0231 import CommitType
+from typing import Literal, Union, Sequence
 from tenacity import retry, stop_after_attempt, wait_fixed, RetryError
 from datetime import datetime, timezone
 import os
@@ -67,7 +66,7 @@ CACHE_EXPIRY_TIME = 300
 
 def generate_cache_key(repo: str, endpoint: str, **kwargs) -> str:
     """
-    Generate a cache key based on repo, endpoint and additional parameters.
+    Generate cache key based on repo, endpoint and additional parameters.
     """
     data_dict = {
         'repo': repo,
@@ -80,7 +79,7 @@ def generate_cache_key(repo: str, endpoint: str, **kwargs) -> str:
 
 def is_cache_valid(cache_entry: dict) -> bool:
     """
-    Check if cache entry is still valid based on timestamp.
+    Check if cache entry is valid based on timestamp.
     """
     return (time.time() - cache_entry.get('timestamp', 0)) < CACHE_EXPIRY_TIME
 
@@ -909,13 +908,13 @@ async def check_repo_updates() -> None:
                             "### GitHub API Error\n" f"{err_name}: {err_msg}"
                         )
                         # Handle GitHub API errors
-                        if config.github_send_faliure_group:
+                        if config.github_send_failure_group:
                             pic = await md_to_pic(mark)
                             await send_message(
                                 bot, group_id, MessageSegment.image(pic)
                             )
 
-                        if config.github_send_faliure_superuser:
+                        if config.github_send_failure_superuser:
                             for user_id in superusers:
                                 pic = await md_to_pic(mark)
                                 await send_message(

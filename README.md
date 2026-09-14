@@ -66,8 +66,8 @@
 | GITHUB_RETRIES | 否 |    3    |                       刷新最大重试次数                        |
 | GITHUB_RETRY_DELAY | 否 |    5    |                    每次刷新重试之间的延迟（秒）                     |
 | GITHUB_LANGUAGE | 否 | "en_us" |                        发送的模板语言                        |
-| GITHUB_SEND_FALIURE_GROUP | 否 |  True   |                       失败时是否通知群聊                       |
-| GITHUB_SEND_FALIURE_SUPERUSER | 否 |  False  |                      失败时是否通知超级用户                      |
+| GITHUB_SEND_FAILURE_GROUP | 否 |  True   |                       失败时是否通知群聊                       |
+| GITHUB_SEND_FAILURE_SUPERUSER | 否 |  False  |                      失败时是否通知超级用户                      |
 | GITHUB_DEFAULT_CONFIG_SETTING | 否 |  True   |                     添加仓库时默认监控所有事件                     |
 | GITHUB_SEND_IN_MARKDOWN | 否 |  False  |                 是否以 Markdown 图片方式发送消息                 |
 | GITHUB_SEND_DETAIL_IN_MARKDOWN | 否 |  True   |       是否以 Markdown 图片方式发送详细信息（pr/issue/release）       |
@@ -84,7 +84,7 @@
 
 ### 指令表
 
-本插件所有**非仅管理员或SUPERUSEES**指令均设有15s Cooldown
+本插件所有**非仅管理员或SUPERUSERS**指令均设有15s Cooldown
 
 私聊使用command请将配置群号放在指令最后，如`/repo.add <user>/<repo> <group_id>`
 

@@ -63,7 +63,7 @@ async def post_plugin_setup() -> None:
 # test if all configs exist in the previous database
 async def test_config_exists() -> None:
     """Test if all configs exist in the previous database."""
-    from .repo_activity_new import github
+    from .repo_activity import github
     if not os.path.exists(DATA_DIR / "checked.lock"):
         logger.warning("Reading data and check availability from database, would spend some time to verify...")
         cfgs = load_group_configs(False)
@@ -84,5 +84,5 @@ async def test_config_exists() -> None:
         with open(DATA_DIR / "checked.lock", "w", encoding="utf-8") as f:
             f.write("passed")
         logger.success("Repository config checking success, would skip the process afterwards")
-    logger.info("if you want to re-check the config from database, please delete "
-                f"the 'checked.lock' file in location: {DATA_DIR / 'checked.lock'}")
+    logger.info("if you‘d like re-checking the config from database, please delete "
+                f"'checked.lock' file in location: {DATA_DIR / 'checked.lock'}")

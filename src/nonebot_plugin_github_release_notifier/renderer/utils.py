@@ -5,7 +5,7 @@ from githubkit.versions.latest import models
 
 async def get_repo_from_issue(issue: models.Issue) -> models.FullRepository:
     """Get repository from issue"""
-    from ..repo_activity_new import github
+    from ..repo_activity import github
     if issue.repository:
         owner, repo = issue.repository.full_name.split("/", 1)
         return (await github.rest.repos.async_get(owner=owner, repo=repo)).parsed_data
@@ -18,7 +18,7 @@ async def get_pull_request_from_issue(
         issue: models.Issue,
 ) -> models.PullRequest | None:
     """Get pull request from issue"""
-    from ..repo_activity_new import github
+    from ..repo_activity import github
     if issue.pull_request:
         if issue.repository:
             owner, repo = issue.repository.full_name.split("/", 1)

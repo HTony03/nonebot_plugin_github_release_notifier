@@ -7,14 +7,10 @@ import nonebot_plugin_htmlrender as htmlrender
 
 async def html_to_pic(html: str) -> bytes:
     """
-    Converts the given text into an image using the htmlrender plugin.
+    Converts text into image
 
-    Args:
-        html (str): The HTML content to be rendered into an image.
-
-    Returns:
-        The generated image in bytes format.
-        type: bytes
+    :arg html: The HTML content to be rendered into an image.
+    :returns: The generated image in bytes format.
     """
     return await htmlrender.html_to_pic(
         html=html,
@@ -27,12 +23,8 @@ async def md_to_pic(md_text: str) -> bytes:
     """
     Converts the given Markdown text into an image.
 
-    Args:
-        md_text (str): The markdown content to be rendered into an image.
-
-    Returns:
-        The generated image in bytes format.
-        type: bytes
+    :arg md_text: The Markdown text to be rendered into an image.
+    :returns: The generated image in bytes format.
     """
     md_text = md_text.replace("\n", "\n\r\n")
     from .config import CACHE_DIR

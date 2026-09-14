@@ -1,17 +1,8 @@
-"""
-This module initializes the GitHub Release Notifier plugin for NoneBot.
-
-It sets up the plugin metadata, initializes the database, configures
-group-to-repo mappings, and schedules periodic tasks to check for updates
-in GitHub repositories. The plugin notifies group members of new commits,
-issues, pull requests, and releases in the configured repositories.
-"""
-
 from nonebot import require, get_driver
 from nonebot.internal.driver.abstract import Driver
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from .repo_activity_new import check_repo_updates
+from .repo_activity import check_repo_updates
 from .setup import pre_plugin_setup, post_plugin_setup
 from .db_action import (
     load_group_configs

@@ -1,4 +1,4 @@
-from datetime import datetime  # Standard library imports
+from datetime import datetime
 
 from nonebot import CommandGroup, on_command
 from nonebot.adapters.onebot.v11 import GROUP_ADMIN, GROUP_OWNER, Bot
@@ -39,7 +39,7 @@ async def send_message(bot:Bot, event:MessageEvent, message:MessageSegment | Mes
 ).handle(parameterless=[Cooldown(15, prompt="调用过快")])
 async def handle_check_api_usage(bot: Bot, event: MessageEvent) -> None:
     """Fetch and send the remaining GitHub API usage limits."""
-    from .repo_activity_new import github
+    from .repo_activity import github
     try:
         resp = github.rest.rate_limit.get()
         logger.info(resp)
@@ -90,7 +90,7 @@ async def add_repo(
         bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()
 ):
     """Add a new repository mapping."""
-    from .repo_activity_new import github, initialize_repo_timestamps
+    from .repo_activity import github, initialize_repo_timestamps
     command_args = args.extract_plain_text().split()
     if len(command_args) < 1:
         await bot.send(event, "Usage: repo add <repo> [group_id]")

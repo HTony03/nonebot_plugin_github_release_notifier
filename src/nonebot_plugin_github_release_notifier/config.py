@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-from nonebot import get_plugin_config
+from nonebot import get_driver, get_plugin_config
 from nonebot import logger, require
 from nonebot.compat import model_validator
 # pylint: disable=no-name-in-module
@@ -14,6 +14,7 @@ from githubkit.exception import (
 
 from tenacity import retry, stop_after_attempt, wait_fixed, RetryError
 import json
+import os
 
 require("nonebot_plugin_localstore")
 # pylint: disable=wrong-import-position
@@ -44,6 +45,56 @@ def _get_validator_data(data: Any, field: str) -> Any:
         return None
 
 
+# Backwards compatibility for the misspelled configuration names shipped before v0.1.11:
+# GITHUB_SEND_FALIURE_GROUP / GITHUB_SEND_FALIURE_SUPERUSER -> GITHUB_SEND_FAILURE_...
+# NoneBot lowercases every key read from `.env` files, so the legacy names are lowercase here.
+_LEGACY_CONFIG_ALIASES: dict[str, str] = {
+    "github_send_faliure_group": "github_send_failure_group",
+    "github_send_faliure_superuser": "github_send_failure_superuser",
+}
+
+
+def _is_configured(value: Any) -> bool:
+    """
+    Check whether a configuration value should override the field default.
+
+    Empty values (``None`` or blank strings) are treated as unset, matching the
+    lenient behaviour the misspelled options had before the names were corrected.
+
+    :param value: The raw configuration value
+    :return: Whether the value is usable
+    """
+    return value is not None and (not isinstance(value, str) or value.strip() != "")
+
+
+def _get_legacy_value(data: Any, legacy_name: str) -> Any:
+    """
+    Extract a value configured under a deprecated (misspelled) option name.
+
+    Values are looked up following NoneBot's precedence order: the data passed to
+    the validator (which already contains the values merged from `.env` files),
+    the process environment, and finally NoneBot's global configuration.
+
+    :param data: The validation data (either model instance or dict)
+    :param legacy_name: The lowercase legacy option name to look up
+    :return: The legacy value or None if it is not configured
+    """
+    value = _get_validator_data(data, legacy_name)
+    if value is not None:
+        return value
+
+    for env_name, env_value in os.environ.items():
+        if env_name.lower() == legacy_name:
+            return env_value
+
+    try:
+        global_config = get_driver().config
+    except Exception:
+        # NoneBot is not initialized (e.g. standalone unit tests), nothing to read
+        return None
+    return _get_validator_data(global_config, legacy_name)
+
+
 class Config(BaseModel):  # pylint: disable=missing-class-docstring
     github_dbg: bool = False  # ignore when writing in the readme
 
@@ -52,8 +103,8 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
     GitHub token for accessing the GitHub API.
     Any token, either classic or fine-grained access token, is accepted.
     """
-    github_send_faliure_group: bool = True
-    github_send_faliure_superuser: bool = False
+    github_send_failure_group: bool = True
+    github_send_failure_superuser: bool = False
     """
     Send failure messages to the group and superuser.
     """
@@ -110,6 +161,37 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
 
     github_theme: Literal['light', 'dark'] = "dark"  # validate
 
+
+    @model_validator(mode="before")
+    @classmethod
+    def model_apply_legacy_names(cls, data: Any) -> Any:
+        """
+        Keep the misspelled legacy option names working.
+
+        ``GITHUB_SEND_FALIURE_GROUP`` and ``GITHUB_SEND_FALIURE_SUPERUSER``
+        (typos of ``..._FAILURE_...``) were shipped before v0.1.11, so values
+        configured under those names in existing `.env` files are applied to the
+        corrected fields. The correctly spelled names always take precedence.
+        """
+        for legacy_name, field_name in _LEGACY_CONFIG_ALIASES.items():
+            if _is_configured(_get_validator_data(data, field_name)):
+                # the correctly spelled option is configured, it wins
+                continue
+
+            legacy_value = _get_legacy_value(data, legacy_name)
+            if not _is_configured(legacy_value):
+                continue
+
+            logger.warning(
+                f"Deprecated config name '{legacy_name.upper()}' detected, "
+                f"please rename it to '{field_name.upper()}' in your .env file. "
+                "The misspelled name is still applied for now."
+            )
+            if isinstance(data, dict):
+                data[field_name] = legacy_value
+            else:
+                setattr(data, field_name, legacy_value)
+        return data
 
     @model_validator(mode="after")
     @classmethod
@@ -212,15 +294,7 @@ class Config(BaseModel):  # pylint: disable=missing-class-docstring
 
 
 def get_translation() -> dict:
-    # if language is None:
-    #     language = config.github_language
-    #
-    # translation_file = Path(__file__).parent / "lang" / f"{language}.json"
-    #
-    # if not translation_file.exists():
-    #     logger.error(f"Failed to fetch translation file for lang: {language}, using default(en_us)")
     translation_file = Path(__file__).parent / "lang" / (config.github_language + ".json")
-
     try:
         with open(translation_file, 'r', encoding='utf-8') as f:
             return json.load(f)

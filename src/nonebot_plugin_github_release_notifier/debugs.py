@@ -5,7 +5,7 @@ from nonebot.params import CommandArg
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment, Message, MessageEvent, GroupMessageEvent
 
 from .pic_process import md_to_pic
-from .repo_activity_new import send_release_files
+from .repo_activity import send_release_files
 
 
 def checker() -> bool:  # pylint: disable=missing-function-docstring
@@ -59,7 +59,7 @@ async def render(
     """
     Send release files to the group.
     """
-    from .repo_activity_new import github
+    from .repo_activity import github
     from .renderer import issue_commented_to_image
     from nonebot.adapters.onebot.v11 import MessageSegment
     from githubkit.exception import PrimaryRateLimitExceeded
@@ -94,9 +94,10 @@ async def render(
         logger.opt(exception=True).error(f"Failed to render or send image: {e}")
         await bot.send(event, f"An error occurred: {e}")
 
+
 @debugs.command('render2').handle()
 async def deeee(bot:Bot, event: MessageEvent):
-    from .repo_activity_new import github
+    from .repo_activity import github
     from .renderer import issue_to_image
     from nonebot.adapters.onebot.v11 import MessageSegment
     from githubkit.exception import PrimaryRateLimitExceeded

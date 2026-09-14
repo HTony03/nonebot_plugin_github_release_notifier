@@ -64,8 +64,8 @@ Add the following required configuration items to the `.env` file in your NoneBo
 | GITHUB_RETRIES |    No    | 3 |                  Maximum retry attempts for refreshing                  |
 | GITHUB_RETRY_DELAY |    No    | 5 |               Delay between each refresh retry (seconds)                |
 | GITHUB_LANGUAGE |    No    | "en_us" |                     Language for sending templates                      |
-| GITHUB_SEND_FALIURE_GROUP |    No    | True |                         Notify group on failure                         |
-| GITHUB_SEND_FALIURE_SUPERUSER |    No    | False |                       Notify superuser on failure                       |
+| GITHUB_SEND_FAILURE_GROUP |    No    | True |                         Notify group on failure                         |
+| GITHUB_SEND_FAILURE_SUPERUSER |    No    | False |                       Notify superuser on failure                       |
 | GITHUB_DEFAULT_CONFIG_SETTING |    No    | True |            Monitor all events by default when adding a repo             |
 | GITHUB_SEND_IN_MARKDOWN |    No    | False |                    Send messages as Markdown images                     |
 | GITHUB_SEND_DETAIL_IN_MARKDOWN |    No    | True |           Send details (pr/issue/release) as Markdown images            |

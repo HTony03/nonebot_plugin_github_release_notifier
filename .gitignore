@@ -130,6 +130,7 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.dsh_scratch/
 
 # Pyre type checker
 .pyre/
